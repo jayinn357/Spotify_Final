@@ -11,6 +11,103 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Helper: persist an array of formatted tracks into DB. Each track should follow the formatted shape used by controllers
+const persistTracks = async (formattedTracks, markPopular = false) => {
+  if (!Array.isArray(formattedTracks) || formattedTracks.length === 0) return;
+
+  await sequelize.transaction(async (t) => {
+    for (const tr of formattedTracks) {
+      try {
+        // Determine primary artist (first in array)
+        const primaryArtist = (tr.artists && tr.artists[0]) || null;
+        const artistName = primaryArtist ? primaryArtist.name : 'Unknown Artist';
+        const artistSpotifyId = primaryArtist ? primaryArtist.id : null;
+
+        // Find artist (DON'T create new artists - only use existing SB19 + 5 members)
+        let artistInstance = null;
+        if (artistSpotifyId) {
+          artistInstance = await Artist.findOne({
+            where: { spotify_id: artistSpotifyId },
+            transaction: t
+          });
+          // If artist doesn't exist in our DB (not SB19 or a member), skip this track
+          if (!artistInstance) {
+            console.log(`Skipping track "${tr.name}" - artist ${artistName} (${artistSpotifyId}) not in our database`);
+            continue;
+          }
+        } else {
+          // No spotify ID, try to find by name
+          artistInstance = await Artist.findOne({
+            where: { name: artistName },
+            transaction: t
+          });
+          // If not found, skip
+          if (!artistInstance) {
+            console.log(`Skipping track "${tr.name}" - artist ${artistName} not in our database`);
+            continue;
+          }
+        }
+
+        // Album upsert
+        let albumIdDb = null;
+        if (tr.album && tr.album.id) {
+          const albumSpotifyId = tr.album.id;
+          const albumName = tr.album.name || 'Unknown Album';
+          const albumImages = tr.album.images || null;
+
+          const [albumInstance] = await Album.findOrCreate({
+            where: { spotify_id: albumSpotifyId },
+            defaults: { spotify_id: albumSpotifyId, name: albumName, images: albumImages },
+            transaction: t
+          });
+
+          if ((albumInstance.name !== albumName) || (JSON.stringify(albumInstance.images) !== JSON.stringify(albumImages))) {
+            albumInstance.name = albumName;
+            albumInstance.images = albumImages;
+            await albumInstance.save({ transaction: t });
+          }
+
+          albumIdDb = albumInstance.id;
+        }
+
+        const spotifyTrackId = tr.id || tr.spotify_track_id || tr.spotify_id || null;
+        if (!spotifyTrackId) continue;
+
+        // Check existing
+        const existing = await Track.findOne({ where: { spotify_track_id: spotifyTrackId }, transaction: t });
+        if (existing) {
+          // Optionally update metadata if changed
+          let needsSave = false;
+          if (!existing.title && tr.name) { existing.title = tr.name; needsSave = true; }
+          if (!existing.duration_ms && tr.duration_ms) { existing.duration_ms = tr.duration_ms; needsSave = true; }
+          if (markPopular && !existing.is_popular) { existing.is_popular = true; needsSave = true; }
+          if (needsSave) await existing.save({ transaction: t });
+          continue;
+        }
+
+        // Create track
+        await Track.create({
+          spotify_track_id: spotifyTrackId,
+          spotify_id: tr.spotify_id || null,
+          title: tr.name || tr.title || '',
+          artist_id: artistInstance ? artistInstance.id : null,
+          album_id: albumIdDb || null,
+          duration_ms: tr.duration_ms || null,
+          local_audio_url: tr.local_audio_url || null,
+          spotify_external_url: tr.external_urls && tr.external_urls.spotify ? tr.external_urls.spotify : (tr.external_urls ? JSON.stringify(tr.external_urls) : null),
+          images: tr.album && tr.album.images ? tr.album.images : (tr.images || null),
+          is_featured: tr.is_featured || 0,
+          is_popular: markPopular ? 1 : 0,
+          order_index: tr.order_index || 0
+        }, { transaction: t });
+      } catch (err) {
+        console.error('persistTracks internal error for track', tr && tr.id, err);
+        // continue on error for each track
+      }
+    }
+  });
+};
+
 // Spotify configuration
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1';
 const SB19_ARTIST_ID = '3g7vYcdDXnqnDKYFwqXBJP';
@@ -76,6 +173,13 @@ export const getSB19PopularTracks = async (req, res) => {
         external_urls: track.external_urls
       };
     });
+
+    // Persist popular tracks so next time we serve from DB
+    try {
+      await persistTracks(formattedTracks, true);
+    } catch (errPersist) {
+      console.error('Failed to persist popular tracks:', errPersist);
+    }
 
     res.json({ tracks: formattedTracks });
   } catch (error) {
@@ -168,6 +272,13 @@ export const getMemberTracks = async (req, res) => {
       };
     });
 
+    // Persist fetched member tracks to DB for caching
+    try {
+      await persistTracks(formattedTracks, false);
+    } catch (errPersist) {
+      console.error('Failed to persist member tracks:', errPersist);
+    }
+
     res.json({ tracks: formattedTracks });
   } catch (error) {
     console.error('Get member tracks error:', error);
@@ -209,8 +320,8 @@ export const getAllTracks = async (req, res) => {
       return res.json({ tracks: formattedTracks });
     }
 
-    // If DB empty, fetch from Spotify (do not persist automatically)
-    const data = await makeSpotifyRequest(`/artists/${SB19_ARTIST_ID}/top-tracks`, { market: 'PH' });
+  // If DB empty, fetch from Spotify and persist results
+  const data = await makeSpotifyRequest(`/artists/${SB19_ARTIST_ID}/top-tracks`, { market: 'PH' });
 
     const formattedTracks = data.tracks.map(track => {
       const localAudioUrl = checkLocalAudio(track.id);
@@ -226,6 +337,13 @@ export const getAllTracks = async (req, res) => {
         external_urls: track.external_urls
       };
     });
+
+    // Persist fetched tracks so DB will have cached data
+    try {
+      await persistTracks(formattedTracks, true);
+    } catch (errPersist) {
+      console.error('Failed to persist tracks from getAllTracks:', errPersist);
+    }
 
     return res.json({ tracks: formattedTracks });
   } catch (error) {

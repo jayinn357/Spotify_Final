@@ -31,7 +31,8 @@ class API {
     // Handle errors
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Request failed' }));
-      // Throw the parsed error object so callers can inspect validation errors
+      // Include status for callers to inspect
+      (error as any).status = response.status;
       throw error;
     }
 

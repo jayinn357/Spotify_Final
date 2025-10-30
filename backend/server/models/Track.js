@@ -46,6 +46,11 @@ const Track = sequelize.define('Track', {
     allowNull: false,
     defaultValue: false
   },
+  is_popular: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
+  },
   order_index: {
     type: DataTypes.INTEGER,
     allowNull: false,

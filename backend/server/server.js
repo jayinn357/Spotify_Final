@@ -48,9 +48,9 @@ app.use(session({
   }
 }));
 
-// Serve static files (audio files)
-app.use('/audio', express.static(join(__dirname, '../public/audio')));
-app.use('/images', express.static(join(__dirname, '../public/images')));
+// Serve static files from frontend/public
+app.use('/audio', express.static(join(__dirname, '../../frontend/public/audio')));
+app.use('/images', express.static(join(__dirname, '../../frontend/public/images')));
 
 // API Routes
 app.use('/api/auth', authRoutes);

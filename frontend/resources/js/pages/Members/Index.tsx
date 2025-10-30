@@ -108,7 +108,8 @@ export default function Members() {
         setLoadingMember(null);
         return;
       }
-      const response = await fetch(`/api/spotify/artists/${artistId}/top-tracks?market=PH`);
+      // Fetch from DATABASE endpoint, not Spotify API
+      const response = await fetch(`/api/tracks/member/${artistId}`);
       if (response.ok) {
         const data = await response.json();
         setMemberTracks(prev => ({ ...prev, [memberName]: data.tracks || [] }));
@@ -336,15 +337,10 @@ export default function Members() {
                                 playMemberPlaylist(memberTracksArray, selectedMember, trackIndex);
                               }}
                               className="text-yellow-400 hover:text-yellow-300 text-lg"
-                              title={track.preview_url ? "Play 30s preview" : "Open in Spotify"}
+                              title="Play track"
                             >
                               ▶
                             </button>
-                            {track.preview_url && (
-                              <audio controls src={track.preview_url} style={{ width: 120 }}>
-                                Your browser does not support the audio element.
-                              </audio>
-                            )}
                           </div>
                         </div>
                       ))}

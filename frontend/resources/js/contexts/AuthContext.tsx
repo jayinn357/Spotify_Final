@@ -35,7 +35,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = async () => {
     try {
       const userData = await api.auth.getUser();
-      setUser(userData);
+      // API returns { user: {...} } — normalize here to set the user object
+      if (userData && typeof userData === 'object' && 'user' in userData) {
+        setUser((userData as any).user);
+      } else {
+        setUser(userData as any);
+      }
     } catch (error) {
       setUser(null);
     } finally {

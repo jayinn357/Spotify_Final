@@ -3,7 +3,8 @@ import sequelize from '../config/database.js';
 
 const Artist = sequelize.define('Artist', {
   id: {
-    type: DataTypes.BIGINT.UNSIGNED,
+    // Use INTEGER to stay compatible with other tables' foreign keys
+    type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
   },
@@ -13,15 +14,15 @@ const Artist = sequelize.define('Artist', {
   },
   spotify_id: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     unique: true
   },
   role: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  image_path: {
-    type: DataTypes.STRING,
+  image_url: {
+    type: DataTypes.TEXT,
     allowNull: true
   },
   real_name: {
