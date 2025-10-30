@@ -81,7 +81,8 @@ export default function Home() {
 
         // Redirect to Random Song Page after animation (1 second)
         setTimeout(() => {
-            navigate("/random");
+            // router defines this page at "/random-song"
+            navigate("/random-song");
         }, 1000);
     };
 
@@ -202,84 +203,38 @@ export default function Home() {
         setAllGroupSongs([]);
 
         try {
-            const allSongs: SpotifyTrack[] = [];
-
-            // 1. Get SB19's top tracks
-            const topTracksResponse = await fetch(`/api/spotify/artists/${SB19_ARTIST_ID}/top-tracks?market=PH`);
-            if (topTracksResponse.ok) {
-                const topData = await topTracksResponse.json();
-                console.log('=== DEBUG: SB19 Top Tracks in All Songs Modal ===');
-                console.log('Top tracks data:', topData);
-                if (topData.tracks && topData.tracks.length > 0) {
-                    console.log('First top track album images:', topData.tracks[0].album?.images);
-                }
+            // Fetch all tracks from database instead of Spotify API
+            const allTracksResponse = await fetch('/api/tracks');
+            
+            if (allTracksResponse.ok) {
+                const allTracksData = await allTracksResponse.json();
+                console.log('=== DEBUG: All Songs from Database ===');
+                console.log('Total tracks fetched:', allTracksData.tracks?.length);
                 console.log('=== END DEBUG ===');
-                allSongs.push(...(topData.tracks || []));
-            }
-
-            // 2. Search for additional SB19 group songs
-            const searchQueries = [
-                // Album specific searches
-                'SB19 "Get In The Zone"',
-                'SB19 MAPA',
-                'SB19 Bazinga', 
-                'SB19 What?',
-                'SB19 MANA',
-                'SB19 SLMT',
-                'SB19 "Hanggang Sa Huli"',
-                'SB19 "Go Up"',
-                'SB19 "Alab"',
-                'SB19 GENTO',
-                'SB19 LIHAM', 
-                'SB19 CRIMZONE',
-                'SB19 FREEDOM',
-                'SB19 "I Want You"',
-                'SB19 DUNGKA',
-                'SB19 Quit',
-                'SB19 Time',
-                'SB19 8TonBall',
-                'SB19 DAM'
-            ];
-
-            // Search for each query to get comprehensive results
-            for (const query of searchQueries) {
-                try {
-                    const searchResponse = await fetch(`/api/spotify/search?q=${encodeURIComponent(query)}&type=track&limit=10&market=PH`);
-                    if (searchResponse.ok) {
-                        const searchData = await searchResponse.json();
-                        if (searchData.tracks?.items) {
-                            // Filter to only include tracks where SB19 is an artist
-                            const sb19Tracks = searchData.tracks.items.filter((track: SpotifyTrack) => 
-                                track.artists.some(artist => 
-                                    artist.name === 'SB19' || 
-                                    artist.name.includes('SB19')
-                                )
-                            );
-                            allSongs.push(...sb19Tracks);
+                
+                if (allTracksData.tracks && allTracksData.tracks.length > 0) {
+                    // Sort by popularity if available, otherwise by name
+                    const sortedTracks = allTracksData.tracks.sort((a: SpotifyTrack, b: SpotifyTrack) => {
+                        // If tracks have popularity field, use it
+                        if (a.popularity && b.popularity) {
+                            return b.popularity - a.popularity;
                         }
-                    }
-                } catch (err) {
-                    console.error(`Error searching for ${query}:`, err);
+                        // Otherwise sort alphabetically by name
+                        return a.name.localeCompare(b.name);
+                    });
+                    
+                    setAllGroupSongs(sortedTracks);
+                } else {
+                    console.warn('No tracks found in database');
+                    setAllGroupSongs([]);
                 }
+            } else {
+                console.error('Failed to fetch tracks from database');
+                setAllGroupSongs([]);
             }
-
-            // Remove duplicates based on track ID
-            const uniqueTracks: SpotifyTrack[] = [];
-            const trackIds = new Set();
-
-            allSongs.forEach(track => {
-                if (!trackIds.has(track.id)) {
-                    trackIds.add(track.id);
-                    uniqueTracks.push(track);
-                }
-            });
-
-            // Sort by popularity (descending)
-            uniqueTracks.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
-
-            setAllGroupSongs(uniqueTracks);
         } catch (error) {
             console.error('Error fetching all group songs:', error);
+            setAllGroupSongs([]);
         } finally {
             setLoadingAllSongs(false);
         }

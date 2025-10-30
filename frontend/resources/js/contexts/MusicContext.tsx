@@ -53,14 +53,20 @@ export function MusicProvider({ children }: MusicProviderProps) {
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
 
   const playTrack = (track: Track, playlist: Track[], title: string = "Playlist") => {
-    const trackIndex = playlist.findIndex(t => t.id === track.id);
-    if (trackIndex !== -1) {
-      setCurrentTrack(track);
-      setCurrentPlaylist(playlist);
-      setCurrentIndexState(trackIndex);
-      setPlaylistTitle(title);
-      setIsPlayerOpen(true);
-    }
+    // Build a playback playlist that prioritizes local audio files
+  const hasLocal = (t: any) => !!(t.local_audio_url || t.localAudioUrl);
+  const tracksWithLocal = playlist.filter(t => hasLocal(t));
+  const playbackList = tracksWithLocal.length > 0 ? tracksWithLocal : playlist;
+
+    // Find the requested track in the playback list; if missing, default to first
+    const trackIndex = playbackList.findIndex(t => t.id === track.id);
+    const indexToUse = trackIndex !== -1 ? trackIndex : 0;
+
+    setCurrentTrack(playbackList[indexToUse] || null);
+    setCurrentPlaylist(playbackList);
+    setCurrentIndexState(indexToUse);
+    setPlaylistTitle(title);
+    setIsPlayerOpen(true);
   };
 
   const playTrackAtIndex = (index: number) => {
@@ -82,25 +88,69 @@ export function MusicProvider({ children }: MusicProviderProps) {
 
   // Context-aware playlist methods
   const playAlbumPlaylist = (tracks: Track[], albumName: string, startIndex: number = 0) => {
-    setCurrentPlaylist(tracks);
-    setCurrentTrack(tracks[startIndex]);
-    setCurrentIndexState(startIndex);
+    // Prefer tracks that have local audio files; fall back to full list if none
+  const hasLocal = (t: any) => !!(t.local_audio_url || t.localAudioUrl);
+  const localFirst = tracks.filter(t => hasLocal(t));
+    const playback = localFirst.length > 0 ? localFirst : tracks;
+
+    // Try to start from the same track id if possible (helps when original index maps differently after filtering)
+    const intendedTrackId = tracks[startIndex]?.id;
+    let indexToUse = 0;
+    if (intendedTrackId) {
+      const found = playback.findIndex(t => t.id === intendedTrackId);
+      if (found !== -1) indexToUse = found;
+      else indexToUse = Math.min(Math.max(startIndex, 0), playback.length - 1);
+    } else {
+      indexToUse = Math.min(Math.max(startIndex, 0), playback.length - 1);
+    }
+
+    setCurrentPlaylist(playback);
+    setCurrentTrack(playback[indexToUse] || null);
+    setCurrentIndexState(indexToUse);
     setPlaylistTitle(`${albumName} Album`);
     setIsPlayerOpen(true);
   };
 
   const playMemberPlaylist = (tracks: Track[], memberName: string, startIndex: number = 0) => {
-    setCurrentPlaylist(tracks);
-    setCurrentTrack(tracks[startIndex]);
-    setCurrentIndexState(startIndex);
+  const hasLocal = (t: any) => !!(t.local_audio_url || t.localAudioUrl);
+  const localFirst = tracks.filter(t => hasLocal(t));
+    const playback = localFirst.length > 0 ? localFirst : tracks;
+
+    const intendedTrackId = tracks[startIndex]?.id;
+    let indexToUse = 0;
+    if (intendedTrackId) {
+      const found = playback.findIndex(t => t.id === intendedTrackId);
+      if (found !== -1) indexToUse = found;
+      else indexToUse = Math.min(Math.max(startIndex, 0), playback.length - 1);
+    } else {
+      indexToUse = Math.min(Math.max(startIndex, 0), playback.length - 1);
+    }
+
+    setCurrentPlaylist(playback);
+    setCurrentTrack(playback[indexToUse] || null);
+    setCurrentIndexState(indexToUse);
     setPlaylistTitle(`${memberName}'s Songs`);
     setIsPlayerOpen(true);
   };
 
   const playAllSongsPlaylist = (tracks: Track[], startIndex: number = 0) => {
-    setCurrentPlaylist(tracks);
-    setCurrentTrack(tracks[startIndex]);
-    setCurrentIndexState(startIndex);
+  const hasLocal = (t: any) => !!(t.local_audio_url || t.localAudioUrl);
+  const localFirst = tracks.filter(t => hasLocal(t));
+    const playback = localFirst.length > 0 ? localFirst : tracks;
+
+    const intendedTrackId = tracks[startIndex]?.id;
+    let indexToUse = 0;
+    if (intendedTrackId) {
+      const found = playback.findIndex(t => t.id === intendedTrackId);
+      if (found !== -1) indexToUse = found;
+      else indexToUse = Math.min(Math.max(startIndex, 0), playback.length - 1);
+    } else {
+      indexToUse = Math.min(Math.max(startIndex, 0), playback.length - 1);
+    }
+
+    setCurrentPlaylist(playback);
+    setCurrentTrack(playback[indexToUse] || null);
+    setCurrentIndexState(indexToUse);
     setPlaylistTitle("All SB19 Songs");
     setIsPlayerOpen(true);
   };

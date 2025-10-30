@@ -132,11 +132,10 @@ export default function MusicPlayer({
           audio.src = currentTrack.preview_url;
           audio.load();
         } else {
-          // No audio available — skip to next track after brief pause
+          // No audio available — skip to next track immediately
+          console.log(`⏭️ Skipping track "${currentTrack.name}" - no audio URL available`);
           setIsPlaying(false);
-          setTimeout(() => {
-            handleNext();
-          }, 1000);
+          handleNext();
         }
       };
 
