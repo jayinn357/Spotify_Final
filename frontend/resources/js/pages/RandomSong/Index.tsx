@@ -149,6 +149,9 @@ export default function RandomSong() {
     const { playTrack, playMemberPlaylist, playAlbumPlaylist } = useMusic();
     const localAudioRef = useRef<HTMLAudioElement | null>(null);
     const [isLocalPlaying, setIsLocalPlaying] = useState(false);
+    
+    // State for track messages from database
+    const [trackMessages, setTrackMessages] = useState<Record<string, string>>({});
     const [allTracks, setAllTracks] = useState<Track[]>([]);
     const [randomSong, setRandomSong] = useState<Track | null>(null);
     const [spinning, setSpinning] = useState(false);
@@ -167,6 +170,23 @@ export default function RandomSong() {
         const fetchAllTracks = async () => {
             setLoading(true);
             try {
+                // Fetch track messages from database
+                try {
+                    const messagesResponse = await fetch('/api/crud/track-messages');
+                    if (messagesResponse.ok) {
+                        const messagesData = await messagesResponse.json();
+                        const messagesMap: Record<string, string> = {};
+                        messagesData.messages?.forEach((msg: { Track: { title: string }, message: string }) => {
+                            if (msg.Track?.title) {
+                                messagesMap[msg.Track.title] = msg.message;
+                            }
+                        });
+                        setTrackMessages(messagesMap);
+                    }
+                } catch (error) {
+                    console.error('Error fetching track messages:', error);
+                }
+
                 const allTracksData: Track[] = [];
 
                 // 1. Fetch SB19 popular tracks from your database (like Home page)
@@ -475,8 +495,13 @@ export default function RandomSong() {
         }
     };
 
-    // Get song quote
+    // Get song quote - first check database, then fallback to hardcoded
     const getSongQuote = (song: Track) => {
+        // Try database first
+        if (trackMessages[song.name]) {
+            return trackMessages[song.name];
+        }
+        // Fallback to hardcoded quotes
         return songQuotes[song.name] || songQuotes["default"];
     };
 

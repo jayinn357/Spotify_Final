@@ -1,47 +1,33 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
 
-const Artist = sequelize.define('Artist', {
+const AboutFooter = sequelize.define('AboutFooter', {
   id: {
-    // Use INTEGER to stay compatible with other tables' foreign keys
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
   },
-  name: {
+  profile_name: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  spotify_id: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    unique: true
-  },
-  role: {
+  profile_image_url: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  image_url: {
+  main_description: {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  real_name: {
+  quote: {
     type: DataTypes.STRING,
-    allowNull: true
-  },
-  specialty: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  description: {
-    type: DataTypes.TEXT,
     allowNull: true
   }
 }, {
-  tableName: 'artists',
+  tableName: 'about_footer',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at'
 });
 
-export default Artist;
+export default AboutFooter;

@@ -9,6 +9,7 @@ import MembersIndex from './pages/Members/Index';
 import RandomSongIndex from './pages/RandomSong/Index';
 import SpotifyIdFinder from './pages/SpotifyIdFinder';
 import PreviewTest from './pages/PreviewTest';
+import CRUDIndex from './pages/CRUD/Index';
 
 // Auth pages
 import Login from './pages/auth/login';
@@ -33,6 +34,7 @@ export function AppRouter() {
           <Route path="random-song" element={<RandomSongIndex />} />
           <Route path="spotify-finder" element={<SpotifyIdFinder />} />
           <Route path="preview-test" element={<PreviewTest />} />
+          <Route path="crud" element={<CRUDIndex />} />
           <Route path="profile" element={<ProtectedRoute><ProfileIndex /></ProtectedRoute>} />
         </Route>
 
