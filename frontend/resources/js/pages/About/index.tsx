@@ -6,9 +6,7 @@ import { Navigation, Keyboard, Autoplay } from "swiper/modules";
 interface AboutOrigin {
   id: number;
   title: string;
-  content_paragraph_1: string;
-  content_paragraph_2: string;
-  content_paragraph_3: string | null;
+  content: string;
   quote: string | null;
   image_url: string;
   order: number;
@@ -96,7 +94,7 @@ export default function About() {
           alt="SB19 hero"
           className="absolute inset-0 w-full h-full object-cover [object-position:center_-350px]"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-black/80"></div>
+        <div className="absolute inset-0 bg-linear-to-b from-black/80 via-black/60 to-black/80"></div>
 
         <div className="relative z-10 text-center px-6 font-poppins">
           <h1 className="text-4xl md:text-5xl font-extrabold text-yellow-300 tracking-tight drop-shadow-lg">
@@ -134,17 +132,9 @@ export default function About() {
                         <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-4">
                           {origin.title}
                         </h2>
-                        <p className="text-gray-300 leading-relaxed mb-3">
-                          {origin.content_paragraph_1}
+                        <p className="text-gray-300 leading-relaxed whitespace-pre-line">
+                          {origin.content}
                         </p>
-                        <p className="text-gray-300 leading-relaxed mb-3">
-                          {origin.content_paragraph_2}
-                        </p>
-                        {origin.content_paragraph_3 && (
-                          <p className="text-gray-300 leading-relaxed">
-                            {origin.content_paragraph_3}
-                          </p>
-                        )}
                         {origin.quote && (
                           <p className="text-yellow-400 mt-4 italic">
                             "{origin.quote}"
@@ -176,17 +166,9 @@ export default function About() {
                         <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-4">
                           {origin.title}
                         </h2>
-                        <p className="text-gray-300 leading-relaxed mb-3">
-                          {origin.content_paragraph_1}
+                        <p className="text-gray-300 leading-relaxed whitespace-pre-line">
+                          {origin.content}
                         </p>
-                        <p className="text-gray-300 leading-relaxed mb-3">
-                          {origin.content_paragraph_2}
-                        </p>
-                        {origin.content_paragraph_3 && (
-                          <p className="text-gray-300 leading-relaxed">
-                            {origin.content_paragraph_3}
-                          </p>
-                        )}
                         {origin.quote && (
                           <p className="text-yellow-400 mt-4 italic">
                             "{origin.quote}"

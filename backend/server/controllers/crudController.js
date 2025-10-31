@@ -1,4 +1,6 @@
 import { Artist, AboutOrigin, AboutAchievement, AboutFooter, TrackMessage, Track } from '../models/index.js';
+import sequelize from '../config/database.js';
+import { Op } from 'sequelize';
 
 // ===== ARTISTS CRUD =====
 export const getAllArtists = async (req, res) => {
@@ -47,14 +49,14 @@ export const getAllAboutOrigins = async (req, res) => {
 export const updateAboutOrigin = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, content_paragraph_1, content_paragraph_2, content_paragraph_3, quote, image_url } = req.body;
+    const { title, content, quote, image_url } = req.body;
     
     const origin = await AboutOrigin.findByPk(id);
     if (!origin) {
       return res.status(404).json({ error: 'About origin not found' });
     }
 
-    await origin.update({ title, content_paragraph_1, content_paragraph_2, content_paragraph_3, quote, image_url });
+    await origin.update({ title, content, quote, image_url });
     res.json({ origin, message: 'About origin updated successfully' });
   } catch (error) {
     console.error('Error updating about origin:', error);
@@ -64,13 +66,11 @@ export const updateAboutOrigin = async (req, res) => {
 
 export const createAboutOrigin = async (req, res) => {
   try {
-    const { title, content_paragraph_1, content_paragraph_2, content_paragraph_3, quote, image_url, order } = req.body;
+    const { title, content, quote, image_url, order } = req.body;
     
     const origin = await AboutOrigin.create({
       title,
-      content_paragraph_1,
-      content_paragraph_2,
-      content_paragraph_3,
+      content,
       quote,
       image_url,
       order: order || 1
@@ -278,5 +278,79 @@ export const deleteTrackMessage = async (req, res) => {
   } catch (error) {
     console.error('Error deleting track message:', error);
     res.status(500).json({ error: 'Failed to delete track message' });
+  }
+};
+
+// ===== TRACKS AUDIO MANAGEMENT =====
+export const getTracksWithoutAudio = async (req, res) => {
+  try {
+    const tracks = await Track.findAll({
+      where: {
+        local_audio_url: null
+      },
+      include: [
+        {
+          model: Artist,
+          as: 'artist',
+          attributes: ['name']
+        }
+      ],
+      order: [['title', 'ASC']]
+    });
+    
+    res.json({ tracks });
+  } catch (error) {
+    console.error('Error fetching tracks without audio:', error);
+    res.status(500).json({ error: 'Failed to fetch tracks' });
+  }
+};
+
+export const getTracksWithoutMessages = async (req, res) => {
+  try {
+    // Get all track IDs that already have messages
+    const tracksWithMessages = await TrackMessage.findAll({
+      attributes: ['track_id']
+    });
+    const trackIdsWithMessages = tracksWithMessages.map(tm => tm.track_id);
+
+    // Get all tracks that don't have messages
+    const tracks = await Track.findAll({
+      where: {
+        id: {
+          [Op.notIn]: trackIdsWithMessages.length > 0 ? trackIdsWithMessages : [0]
+        }
+      },
+      include: [
+        {
+          model: Artist,
+          as: 'artist',
+          attributes: ['name']
+        }
+      ],
+      order: [['title', 'ASC']]
+    });
+    
+    res.json({ tracks });
+  } catch (error) {
+    console.error('Error fetching tracks without messages:', error);
+    res.status(500).json({ error: 'Failed to fetch tracks' });
+  }
+};
+
+export const updateTrackAudio = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { audioUrl } = req.body;
+    
+    const track = await Track.findByPk(id);
+    if (!track) {
+      return res.status(404).json({ error: 'Track not found' });
+    }
+
+    await track.update({ local_audio_url: audioUrl });
+    res.json({ track, message: 'Track audio updated successfully' });
+  } catch (error) {
+    console.error('Error updating track audio:', error);
+    res.status(500).json({ error: 'Failed to update track audio' });
   }
 };

@@ -13,9 +13,7 @@ interface Artist {
 interface AboutOrigin {
   id: number;
   title: string;
-  content_paragraph_1: string;
-  content_paragraph_2: string;
-  content_paragraph_3: string | null;
+  content: string;
   quote: string | null;
   image_url: string;
   order: number;
@@ -47,7 +45,16 @@ interface TrackMessage {
   };
 }
 
-type TabType = 'artists' | 'origins' | 'achievements' | 'footer' | 'messages';
+interface TrackWithoutAudio {
+  id: number;
+  title: string;
+  spotify_track_id: string;
+  artist?: {
+    name: string;
+  };
+}
+
+type TabType = 'artists' | 'origins' | 'achievements' | 'footer' | 'messages' | 'audios';
 
 export default function CRUDPage() {
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -62,6 +69,10 @@ export default function CRUDPage() {
   const [achievements, setAchievements] = useState<AboutAchievement[]>([]);
   const [footerItems, setFooterItems] = useState<AboutFooter[]>([]);
   const [trackMessages, setTrackMessages] = useState<TrackMessage[]>([]);
+  const [tracksWithoutAudio, setTracksWithoutAudio] = useState<TrackWithoutAudio[]>([]);
+  const [tracksWithoutMessages, setTracksWithoutMessages] = useState<TrackWithoutAudio[]>([]);
+  const [selectedTrackForMessage, setSelectedTrackForMessage] = useState<number | null>(null);
+  const [selectedTrackForAudio, setSelectedTrackForAudio] = useState<number | null>(null);
 
   // Editing states
   const [editingArtist, setEditingArtist] = useState<Artist | null>(null);
@@ -75,9 +86,7 @@ export default function CRUDPage() {
   const [showAchievementModal, setShowAchievementModal] = useState(false);
   const [newOrigin, setNewOrigin] = useState({
     title: '',
-    content_paragraph_1: '',
-    content_paragraph_2: '',
-    content_paragraph_3: '',
+    content: '',
     quote: '',
     image_url: '',
     order: 1
@@ -94,8 +103,36 @@ export default function CRUDPage() {
   const [uploadingAchievementImage, setUploadingAchievementImage] = useState(false);
   const [uploadingFooterImage, setUploadingFooterImage] = useState(false);
   const [uploadingImage, setUploadingImage] = useState<string | null>(null); // Track which item is uploading
+  const [uploadingAudio, setUploadingAudio] = useState<number | null>(null); // Track ID being uploaded
+
+  // Modal states for confirmations
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteAction, setDeleteAction] = useState<(() => void) | null>(null);
+  const [deleteMessage, setDeleteMessage] = useState('');
 
   const ADMIN_PASSWORD = 'sb19admin2025'; // Simple passphrase
+
+  // Helper functions for modals
+  const showSuccess = (message: string) => {
+    setSuccessMessage(message);
+    setShowSuccessModal(true);
+  };
+
+  const confirmDelete = (message: string, action: () => void) => {
+    setDeleteMessage(message);
+    setDeleteAction(() => action);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = () => {
+    if (deleteAction) {
+      deleteAction();
+    }
+    setShowDeleteModal(false);
+    setDeleteAction(null);
+  };
 
   const handleUnlock = () => {
     if (password === ADMIN_PASSWORD) {
@@ -109,20 +146,24 @@ export default function CRUDPage() {
 
   const fetchAllData = async () => {
     try {
-      const [artistsRes, originsRes, achievementsRes, footerRes, messagesRes] = await Promise.all([
+      const [artistsRes, originsRes, achievementsRes, footerRes, messagesRes, tracksRes, tracksNoMsgRes] = await Promise.all([
         fetch('/api/crud/artists'),
         fetch('/api/crud/about-origins'),
         fetch('/api/crud/about-achievements'),
         fetch('/api/crud/about-footer'),
-        fetch('/api/crud/track-messages')
+        fetch('/api/crud/track-messages'),
+        fetch('/api/crud/tracks/without-audio'),
+        fetch('/api/crud/tracks/without-messages')
       ]);
 
-      const [artistsData, originsData, achievementsData, footerData, messagesData] = await Promise.all([
+      const [artistsData, originsData, achievementsData, footerData, messagesData, tracksData, tracksNoMsgData] = await Promise.all([
         artistsRes.json(),
         originsRes.json(),
         achievementsRes.json(),
         footerRes.json(),
-        messagesRes.json()
+        messagesRes.json(),
+        tracksRes.json(),
+        tracksNoMsgRes.json()
       ]);
 
       setArtists(artistsData.artists || []);
@@ -130,9 +171,41 @@ export default function CRUDPage() {
       setAchievements(achievementsData.achievements || []);
       setFooterItems(footerData.footerItems || []);
       setTrackMessages(messagesData.messages || []);
+      setTracksWithoutAudio(tracksData.tracks || []);
+      setTracksWithoutMessages(tracksNoMsgData.tracks || []);
     } catch (err) {
       setError('Failed to fetch data');
       console.error(err);
+    }
+  };
+
+  // Audio upload handler
+  const handleAudioUpload = async (file: File, track: TrackWithoutAudio) => {
+    setUploadingAudio(track.id);
+
+    const formData = new FormData();
+    formData.append('audio', file);
+    formData.append('artistName', track.artist?.name || 'unknown');
+
+    try {
+      const response = await fetch(`/api/crud/tracks/${track.id}/upload-audio`, {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showSuccess(`Audio uploaded successfully for "${track.title}"`);
+        fetchAllData(); // Refresh the list
+      } else {
+        setError(data.error || 'Failed to upload audio');
+      }
+    } catch (error) {
+      setError('Error uploading audio');
+      console.error(error);
+    } finally {
+      setUploadingAudio(null);
     }
   };
 
@@ -152,7 +225,7 @@ export default function CRUDPage() {
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess(`Image uploaded: ${data.filename}`);
+        showSuccess(`Image uploaded: ${data.filename}`);
         callback(data.imageUrl);
       } else {
         setError(data.error || 'Failed to upload image');
@@ -173,7 +246,7 @@ export default function CRUDPage() {
         body: JSON.stringify(artist)
       });
       if (res.ok) {
-        setSuccess('Artist updated successfully');
+        showSuccess('Artist updated successfully');
         fetchAllData();
         setEditingArtist(null);
       } else {
@@ -193,7 +266,7 @@ export default function CRUDPage() {
         body: JSON.stringify(origin)
       });
       if (res.ok) {
-        setSuccess('Origin section updated successfully');
+        showSuccess('Origin section updated successfully');
         fetchAllData();
         setEditingOrigin(null);
       } else {
@@ -213,7 +286,7 @@ export default function CRUDPage() {
         body: JSON.stringify(origin)
       });
       if (res.ok) {
-        setSuccess('Origin section created successfully');
+        showSuccess('Origin section created successfully');
         fetchAllData();
       } else {
         setError('Failed to create origin');
@@ -226,15 +299,11 @@ export default function CRUDPage() {
 
   const deleteOrigin = async (id: number) => {
     try {
-      if (!confirm('Are you sure you want to delete this origin section?')) {
-        return;
-      }
-      
       const res = await fetch(`/api/crud/about-origins/${id}`, {
         method: 'DELETE'
       });
       if (res.ok) {
-        setSuccess('Origin section deleted successfully');
+        showSuccess('Origin section deleted successfully');
         fetchAllData();
       } else {
         setError('Failed to delete origin');
@@ -253,7 +322,7 @@ export default function CRUDPage() {
         body: JSON.stringify(achievement)
       });
       if (res.ok) {
-        setSuccess('Achievement created successfully');
+        showSuccess('Achievement created successfully');
         fetchAllData();
       } else {
         setError('Failed to create achievement');
@@ -272,7 +341,7 @@ export default function CRUDPage() {
         body: JSON.stringify(achievement)
       });
       if (res.ok) {
-        setSuccess('Achievement updated successfully');
+        showSuccess('Achievement updated successfully');
         fetchAllData();
         setEditingAchievement(null);
       } else {
@@ -285,14 +354,12 @@ export default function CRUDPage() {
   };
 
   const deleteAchievement = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this achievement?')) return;
-    
     try {
       const res = await fetch(`/api/crud/about-achievements/${id}`, {
         method: 'DELETE'
       });
       if (res.ok) {
-        setSuccess('Achievement deleted successfully');
+        showSuccess('Achievement deleted successfully');
         fetchAllData();
       } else {
         setError('Failed to delete achievement');
@@ -311,7 +378,7 @@ export default function CRUDPage() {
         body: JSON.stringify(footer)
       });
       if (res.ok) {
-        setSuccess('Footer updated successfully');
+        showSuccess('Footer updated successfully');
         fetchAllData();
         setEditingFooter(null);
       } else {
@@ -331,7 +398,7 @@ export default function CRUDPage() {
         body: JSON.stringify(message)
       });
       if (res.ok) {
-        setSuccess('Track message created successfully');
+        showSuccess('Track message created successfully');
         fetchAllData();
       } else {
         const data = await res.json();
@@ -351,7 +418,7 @@ export default function CRUDPage() {
         body: JSON.stringify({ message: message.message })
       });
       if (res.ok) {
-        setSuccess('Track message updated successfully');
+        showSuccess('Track message updated successfully');
         fetchAllData();
         setEditingMessage(null);
       } else {
@@ -375,7 +442,7 @@ export default function CRUDPage() {
 
   if (!isUnlocked) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center p-4">
         <div className="bg-gray-800 p-8 rounded-lg shadow-2xl max-w-md w-full">
           <h1 className="text-3xl font-bold text-yellow-400 mb-6 text-center">Admin Access</h1>
           <p className="text-gray-300 mb-4 text-center">Enter password to access CRUD panel</p>
@@ -400,7 +467,7 @@ export default function CRUDPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white p-6">
+    <div className="min-h-screen bg-linear-to-br from-gray-900 via-black to-gray-900 text-white p-6">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-bold text-yellow-400 mb-8">CRUD Management Panel</h1>
 
@@ -423,7 +490,8 @@ export default function CRUDPage() {
             { id: 'origins', label: 'About Origins' },
             { id: 'achievements', label: 'Achievements' },
             { id: 'footer', label: 'Footer' },
-            { id: 'messages', label: 'Track Messages' }
+            { id: 'messages', label: 'Track Messages' },
+            { id: 'audios', label: `Track Audios (${tracksWithoutAudio.length} missing)` }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -525,9 +593,7 @@ export default function CRUDPage() {
                 onClick={() => {
                   setNewOrigin({
                     title: '',
-                    content_paragraph_1: '',
-                    content_paragraph_2: '',
-                    content_paragraph_3: '',
+                    content: '',
                     quote: '',
                     image_url: '',
                     order: origins.length + 1
@@ -552,24 +618,10 @@ export default function CRUDPage() {
                           className="w-full bg-gray-600 text-white px-3 py-2 rounded"
                         />
                         <textarea
-                          value={editingOrigin.content_paragraph_1}
-                          onChange={(e) => setEditingOrigin({ ...editingOrigin, content_paragraph_1: e.target.value })}
-                          placeholder="Paragraph 1"
-                          rows={3}
-                          className="w-full bg-gray-600 text-white px-3 py-2 rounded"
-                        />
-                        <textarea
-                          value={editingOrigin.content_paragraph_2}
-                          onChange={(e) => setEditingOrigin({ ...editingOrigin, content_paragraph_2: e.target.value })}
-                          placeholder="Paragraph 2"
-                          rows={3}
-                          className="w-full bg-gray-600 text-white px-3 py-2 rounded"
-                        />
-                        <textarea
-                          value={editingOrigin.content_paragraph_3 || ''}
-                          onChange={(e) => setEditingOrigin({ ...editingOrigin, content_paragraph_3: e.target.value })}
-                          placeholder="Paragraph 3 (optional)"
-                          rows={3}
+                          value={editingOrigin.content}
+                          onChange={(e) => setEditingOrigin({ ...editingOrigin, content: e.target.value })}
+                          placeholder="Content"
+                          rows={8}
                           className="w-full bg-gray-600 text-white px-3 py-2 rounded"
                         />
                         <input
@@ -629,7 +681,7 @@ export default function CRUDPage() {
                     ) : (
                       <div>
                         <h3 className="text-xl font-bold text-yellow-400">{origin.title}</h3>
-                        <p className="text-gray-400 text-sm mt-2">{origin.content_paragraph_1.substring(0, 150)}...</p>
+                        <p className="text-gray-400 text-sm mt-2">{origin.content.substring(0, 150)}...</p>
                         {origin.quote && <p className="text-yellow-300 italic mt-2">"{origin.quote}"</p>}
                         <div className="flex gap-2 mt-3">
                           <button
@@ -639,7 +691,10 @@ export default function CRUDPage() {
                             Edit
                           </button>
                           <button
-                            onClick={() => deleteOrigin(origin.id)}
+                            onClick={() => confirmDelete(
+                              'Are you sure you want to delete this origin section?',
+                              () => deleteOrigin(origin.id)
+                            )}
                             className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-semibold"
                           >
                             Delete
@@ -751,7 +806,10 @@ export default function CRUDPage() {
                             Edit
                           </button>
                           <button
-                            onClick={() => deleteAchievement(achievement.id)}
+                            onClick={() => confirmDelete(
+                              'Are you sure you want to delete this achievement?',
+                              () => deleteAchievement(achievement.id)
+                            )}
                             className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-semibold"
                           >
                             Delete
@@ -857,88 +915,268 @@ export default function CRUDPage() {
           )}
 
           {activeTab === 'messages' && (
-            <div>
-              <h2 className="text-2xl font-bold text-yellow-400 mb-4">Track Inspirational Messages</h2>
-              <p className="text-gray-400 mb-6">Create or edit track messages (Create & Edit only)</p>
-              
-              <div className="mb-4 bg-gray-700 p-4 rounded-lg">
-                <h3 className="font-bold text-yellow-400 mb-3">Add New Message</h3>
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  const formData = new FormData(e.currentTarget);
-                  createTrackMessage({
-                    track_id: parseInt(formData.get('track_id') as string),
-                    message: formData.get('message') as string
-                  });
-                  e.currentTarget.reset();
-                }}>
-                  <input
-                    name="track_id"
-                    type="number"
-                    placeholder="Track ID"
-                    required
-                    className="w-full bg-gray-600 text-white px-3 py-2 rounded mb-2"
-                  />
-                  <textarea
-                    name="message"
-                    placeholder="Inspirational Message"
-                    required
-                    rows={2}
-                    className="w-full bg-gray-600 text-white px-3 py-2 rounded mb-2"
-                  />
-                  <button
-                    type="submit"
-                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-semibold"
-                  >
-                    Create Message
-                  </button>
-                </form>
+            <div className="space-y-6">
+              {/* Header with counts */}
+              <div className="flex items-center justify-between bg-gradient-to-r from-yellow-900/20 to-yellow-800/20 p-4 rounded-lg border border-yellow-500/30">
+                <div>
+                  <h2 className="text-3xl font-bold text-yellow-400">Track Messages Manager</h2>
+                  <p className="text-gray-400 mt-1">Create and edit inspirational messages for your tracks</p>
+                </div>
+                <div className="flex gap-6">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-red-400">{tracksWithoutMessages.length}</div>
+                    <div className="text-xs text-gray-400 uppercase">Need Messages</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-green-400">{trackMessages.length}</div>
+                    <div className="text-xs text-gray-400 uppercase">Have Messages</div>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-4">
-                {trackMessages.map((msg) => (
-                  <div key={msg.id} className="bg-gray-700 p-4 rounded-lg">
-                    {editingMessage?.id === msg.id ? (
-                      <div className="space-y-3">
-                        <textarea
-                          value={editingMessage.message}
-                          onChange={(e) => setEditingMessage({ ...editingMessage, message: e.target.value })}
-                          placeholder="Message"
-                          rows={3}
-                          className="w-full bg-gray-600 text-white px-3 py-2 rounded"
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => updateTrackMessage(editingMessage)}
-                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+              {/* Create Message Section */}
+              {tracksWithoutMessages.length > 0 && (
+                <div className="bg-gray-800 rounded-lg border border-gray-700">
+                  <div className="bg-red-900/30 px-6 py-4 border-b border-red-700/50">
+                    <h3 className="text-xl font-bold text-red-300">➕ Create New Message</h3>
+                    <p className="text-gray-400 text-sm mt-1">{tracksWithoutMessages.length} tracks are waiting for your inspirational message</p>
+                  </div>
+                  <div className="p-6">
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.currentTarget);
+                      if (!selectedTrackForMessage) {
+                        setError('Please select a track');
+                        return;
+                      }
+                      createTrackMessage({
+                        track_id: selectedTrackForMessage,
+                        message: formData.get('message') as string
+                      });
+                      e.currentTarget.reset();
+                      setSelectedTrackForMessage(null);
+                    }}>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Left: Track selection */}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-300 mb-2">1. Select Track</label>
+                          <select
+                            value={selectedTrackForMessage || ''}
+                            onChange={(e) => setSelectedTrackForMessage(e.target.value ? parseInt(e.target.value) : null)}
+                            className="w-full bg-gray-700 text-white px-4 py-3 rounded-lg border border-gray-600 focus:border-yellow-500 focus:outline-none"
+                            required
                           >
-                            Save
-                          </button>
+                            <option value="">-- Choose a track ({tracksWithoutMessages.length} available) --</option>
+                            {tracksWithoutMessages.map((track) => (
+                              <option key={track.id} value={track.id}>
+                                {track.title} {track.artist?.name && `• ${track.artist.name}`}
+                              </option>
+                            ))}
+                          </select>
+                          
+                          {selectedTrackForMessage && (
+                            <div className="mt-3 bg-yellow-900/20 border border-yellow-600/50 p-4 rounded-lg">
+                              <div className="text-sm font-semibold text-yellow-400">✓ Selected:</div>
+                              <div className="text-white mt-1">{tracksWithoutMessages.find(t => t.id === selectedTrackForMessage)?.title}</div>
+                              <div className="text-gray-400 text-sm">{tracksWithoutMessages.find(t => t.id === selectedTrackForMessage)?.artist?.name || 'Unknown Artist'}</div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Right: Message input */}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-300 mb-2">2. Write Message</label>
+                          <textarea
+                            name="message"
+                            placeholder="Your inspirational message for this track..."
+                            required
+                            rows={6}
+                            className="w-full bg-gray-700 text-white px-4 py-3 rounded-lg border border-gray-600 focus:border-yellow-500 focus:outline-none resize-none"
+                            disabled={!selectedTrackForMessage}
+                          />
                           <button
-                            onClick={() => setEditingMessage(null)}
-                            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+                            type="submit"
+                            disabled={!selectedTrackForMessage}
+                            className="mt-3 w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg transition"
                           >
-                            Cancel
+                            {selectedTrackForMessage ? '✓ Create Message' : 'Select a track first'}
                           </button>
                         </div>
                       </div>
-                    ) : (
-                      <div>
-                        <h3 className="text-lg font-bold text-yellow-400">
-                          Track: {msg.Track?.title || `ID ${msg.track_id}`}
-                        </h3>
-                        <p className="text-gray-300 mt-2">{msg.message}</p>
-                        <button
-                          onClick={() => setEditingMessage(msg)}
-                          className="mt-3 bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded font-semibold"
-                        >
-                          Edit
-                        </button>
-                      </div>
-                    )}
+                    </form>
                   </div>
-                ))}
+                </div>
+              )}
+
+              {/* Edit Messages Section */}
+              <div className="bg-gray-800 rounded-lg border border-gray-700">
+                <div className="bg-green-900/30 px-6 py-4 border-b border-green-700/50 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold text-green-300">✏️ Edit Existing Messages</h3>
+                    <p className="text-gray-400 text-sm mt-1">{trackMessages.length} tracks already have messages</p>
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    Click a message to edit it
+                  </div>
+                </div>
+                <div className="p-6">
+                  {trackMessages.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500">
+                      <div className="text-5xl mb-4">📝</div>
+                      <div>No messages yet. Create your first one above!</div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                      {trackMessages.map((msg) => (
+                        <div
+                          key={msg.id}
+                          className="bg-gray-700/50 rounded-lg border border-gray-600 hover:border-yellow-500/50 transition"
+                        >
+                          {editingMessage?.id === msg.id ? (
+                            <div className="p-5">
+                              <div className="bg-gray-800 p-3 rounded mb-3 border-l-4 border-yellow-500">
+                                <div className="text-sm text-yellow-400 font-semibold">Editing Message For:</div>
+                                <div className="text-white font-bold">{msg.Track?.title || `Track #${msg.track_id}`}</div>
+                              </div>
+                              <textarea
+                                value={editingMessage.message}
+                                onChange={(e) => setEditingMessage({ ...editingMessage, message: e.target.value })}
+                                rows={4}
+                                className="w-full bg-gray-600 text-white px-4 py-3 rounded-lg border border-gray-500 focus:border-yellow-500 focus:outline-none"
+                              />
+                              <div className="flex gap-3 mt-3">
+                                <button
+                                  onClick={() => updateTrackMessage(editingMessage)}
+                                  className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-lg"
+                                >
+                                  ✓ Save Changes
+                                </button>
+                                <button
+                                  onClick={() => setEditingMessage(null)}
+                                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg"
+                                >
+                                  ✕ Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="p-5 cursor-pointer" onClick={() => setEditingMessage(msg)}>
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="font-bold text-lg text-yellow-400">{msg.Track?.title || `Track #${msg.track_id}`}</div>
+                                <button className="text-gray-400 hover:text-yellow-400 text-sm">
+                                  ✏️ Edit
+                                </button>
+                              </div>
+                              <div className="text-gray-300 leading-relaxed">{msg.message}</div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'audios' && (
+            <div>
+              <h2 className="text-2xl font-bold text-yellow-400 mb-4">Upload Track Audios</h2>
+              <p className="text-gray-400 mb-2">Upload audio files for tracks that don't have local audio yet</p>
+              <p className="text-yellow-300 text-sm mb-6">
+                ⚠️ Important: The audio filename (without extension) must exactly match the track's Spotify ID
+              </p>
+
+              {tracksWithoutAudio.length === 0 ? (
+                <div className="bg-gray-700 p-6 rounded-lg text-center">
+                  <p className="text-green-400 text-lg">✅ All tracks have audio files!</p>
+                </div>
+              ) : (
+                <div className="bg-gray-700 p-4 rounded-lg">
+                  <h3 className="font-bold text-yellow-400 mb-3">Upload Audio File</h3>
+                  
+                  <div className="mb-3">
+                    <label className="block text-gray-300 mb-2">Select Track *</label>
+                    <select
+                      value={selectedTrackForAudio || ''}
+                      onChange={(e) => setSelectedTrackForAudio(e.target.value ? parseInt(e.target.value) : null)}
+                      className="w-full bg-gray-600 text-white px-3 py-2 rounded"
+                    >
+                      <option value="">-- Select a track without audio --</option>
+                      {tracksWithoutAudio.map((track) => (
+                        <option key={track.id} value={track.id}>
+                          {track.title} {track.artist?.name ? `(by ${track.artist.name})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {selectedTrackForAudio && (() => {
+                    const selectedTrack = tracksWithoutAudio.find(t => t.id === selectedTrackForAudio);
+                    if (!selectedTrack) return null;
+                    
+                    return (
+                      <div className="bg-gray-600 p-4 rounded-lg">
+                        <h4 className="text-lg font-bold text-yellow-400 mb-2">{selectedTrack.title}</h4>
+                        <p className="text-gray-300 text-sm mb-1">
+                          <strong>Artist:</strong> {selectedTrack.artist?.name || 'Unknown'}
+                        </p>
+                        <p className="text-gray-300 text-sm mb-2">
+                          <strong>Spotify ID:</strong> <span className="font-mono bg-gray-700 px-2 py-1 rounded">{selectedTrack.spotify_track_id}</span>
+                        </p>
+                        <p className="text-blue-300 text-sm mb-3">
+                          📁 <strong>Required filename:</strong> <span className="font-mono bg-gray-700 px-2 py-1 rounded">{selectedTrack.spotify_track_id}.mp3</span> (or .wav, .ogg, .m4a)
+                        </p>
+                        
+                        <input
+                          type="file"
+                          accept="audio/*"
+                          id="audio-upload-input"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              // Validate filename before upload
+                              const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+                              if (fileNameWithoutExt !== selectedTrack.spotify_track_id) {
+                                setError(
+                                  `Filename mismatch! Expected "${selectedTrack.spotify_track_id}" but got "${fileNameWithoutExt}". ` +
+                                  `Please rename your file to match the Spotify ID.`
+                                );
+                                e.target.value = ''; // Reset input
+                                return;
+                              }
+                              handleAudioUpload(file, selectedTrack);
+                              setSelectedTrackForAudio(null); // Reset after upload
+                            }
+                          }}
+                          disabled={uploadingAudio === selectedTrack.id}
+                          className="hidden"
+                        />
+                        <label
+                          htmlFor="audio-upload-input"
+                          className={`cursor-pointer inline-block px-6 py-3 rounded font-semibold transition ${
+                            uploadingAudio === selectedTrack.id
+                              ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                              : 'bg-green-500 hover:bg-green-600 text-white'
+                          }`}
+                        >
+                          {uploadingAudio === selectedTrack.id ? (
+                            <span className="flex items-center gap-2">
+                              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                              </svg>
+                              Uploading...
+                            </span>
+                          ) : (
+                            '📤 Upload Audio File'
+                          )}
+                        </label>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -962,35 +1200,14 @@ export default function CRUDPage() {
                 />
               </div>
               <div>
-                <label className="block text-gray-300 mb-2">Paragraph 1 *</label>
+                <label className="block text-gray-300 mb-2">Content *</label>
                 <textarea
-                  value={newOrigin.content_paragraph_1}
-                  onChange={(e) => setNewOrigin({ ...newOrigin, content_paragraph_1: e.target.value })}
-                  placeholder="Enter first paragraph"
-                  rows={4}
+                  value={newOrigin.content}
+                  onChange={(e) => setNewOrigin({ ...newOrigin, content: e.target.value })}
+                  placeholder="Enter content"
+                  rows={10}
                   className="w-full bg-gray-700 text-white px-4 py-2 rounded"
                   required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-300 mb-2">Paragraph 2 (Optional)*</label>
-                <textarea
-                  value={newOrigin.content_paragraph_2}
-                  onChange={(e) => setNewOrigin({ ...newOrigin, content_paragraph_2: e.target.value })}
-                  placeholder="Enter second paragraph (optional)"
-                  rows={4}
-                  className="w-full bg-gray-700 text-white px-4 py-2 rounded"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-300 mb-2">Paragraph 3 (Optional)</label>
-                <textarea
-                  value={newOrigin.content_paragraph_3}
-                  onChange={(e) => setNewOrigin({ ...newOrigin, content_paragraph_3: e.target.value })}
-                  placeholder="Enter third paragraph (optional)"
-                  rows={4}
-                  className="w-full bg-gray-700 text-white px-4 py-2 rounded"
                 />
               </div>
               <div>
@@ -1049,7 +1266,7 @@ export default function CRUDPage() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => {
-                    if (!newOrigin.title || !newOrigin.content_paragraph_1 || !newOrigin.content_paragraph_2 || !newOrigin.image_url) {
+                    if (!newOrigin.title || !newOrigin.content || !newOrigin.image_url) {
                       setError('Please fill in all required fields');
                       return;
                     }
@@ -1160,6 +1377,60 @@ export default function CRUDPage() {
                 <button
                   onClick={() => setShowAchievementModal(false)}
                   className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded font-semibold"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full border-2 border-green-500">
+            <div className="text-center">
+              <div className="mb-4">
+                <svg className="w-16 h-16 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-green-400 mb-3">Success!</h3>
+              <p className="text-gray-300 mb-6">{successMessage}</p>
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="bg-green-500 hover:bg-green-600 text-white px-8 py-3 rounded-lg font-semibold w-full"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full border-2 border-red-500">
+            <div className="text-center">
+              <div className="mb-4">
+                <svg className="w-16 h-16 text-red-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-red-400 mb-3">Confirm Delete</h3>
+              <p className="text-gray-300 mb-6">{deleteMessage}</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleDelete}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-semibold"
+                >
+                  Yes, Delete
+                </button>
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold"
                 >
                   Cancel
                 </button>

@@ -21,15 +21,22 @@ import {
   getTrackMessageByTrackId,
   createTrackMessage,
   updateTrackMessage,
-  deleteTrackMessage
+  deleteTrackMessage,
+  // Tracks Audio
+  getTracksWithoutAudio,
+  getTracksWithoutMessages,
+  updateTrackAudio
 } from '../controllers/crudController.js';
 
-import { upload, uploadImage } from '../controllers/uploadController.js';
+import { upload, uploadImage, uploadAudio, uploadTrackAudio } from '../controllers/uploadController.js';
 
 const router = express.Router();
 
 // ===== IMAGE UPLOAD ROUTE =====
 router.post('/upload-image', upload.single('image'), uploadImage);
+
+// ===== AUDIO UPLOAD ROUTE =====
+router.post('/tracks/:trackId/upload-audio', uploadAudio.single('audio'), uploadTrackAudio);
 
 // ===== ARTISTS ROUTES =====
 router.get('/artists', getAllArtists);
@@ -57,5 +64,10 @@ router.get('/track-messages/track/:trackId', getTrackMessageByTrackId);
 router.post('/track-messages', createTrackMessage);
 router.put('/track-messages/:id', updateTrackMessage);
 router.delete('/track-messages/:id', deleteTrackMessage);
+
+// ===== TRACKS AUDIO ROUTES =====
+router.get('/tracks/without-audio', getTracksWithoutAudio);
+router.get('/tracks/without-messages', getTracksWithoutMessages);
+router.put('/tracks/:id/audio', updateTrackAudio);
 
 export default router;

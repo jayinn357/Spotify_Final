@@ -180,8 +180,8 @@ export default function Home() {
                 return;
             }
 
-            // Fetch tracks from the specific album using Spotify API
-            const albumResponse = await fetch(`/api/spotify/albums/${albumId}/tracks?market=PH`);        
+            // Fetch tracks from DATABASE (includes local_audio_url) instead of Spotify API
+            const albumResponse = await fetch(`/api/tracks?album_id=${albumId}`);        
 
             if (albumResponse.ok) {
                 const albumData = await albumResponse.json();

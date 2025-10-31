@@ -10,24 +10,19 @@ async function seedCrudData() {
     await AboutOrigin.bulkCreate([
       {
         title: 'Origins & Formation',
-        content_paragraph_1: `SB19 (short for Sound Break 19) was formed by ShowBT Philippines, aiming to blend Korean idol training with Filipino artistry. The members—Pablo, Josh, Stell, Ken, and Justin—underwent years of intensive preparation before debuting in October 2018 with their heartfelt single "Tilaluha."`,
-        content_paragraph_2: `Their early journey was marked by strict vocal and dance training, perseverance through challenges, and a shared passion for music. These experiences built their strong foundation and unity, shaping the identity that would later define SB19's rise in the P-pop scene.`,
-        content_paragraph_3: `Over time, SB19 has become a symbol of the fusion between global pop influences and Filipino creativity. Their story highlights teamwork, dedication, and the transformative power of music, inspiring countless fans and aspiring artists across the Philippines and beyond.`,
+        content: `SB19 (short for Sound Break 19) was formed by ShowBT Philippines, aiming to blend Korean idol training with Filipino artistry. The members—Pablo, Josh, Stell, Ken, and Justin—underwent years of intensive preparation before debuting in October 2018 with their heartfelt single "Tilaluha." Their early journey was marked by strict vocal and dance training, perseverance through challenges, and a shared passion for music. These experiences built their strong foundation and unity, shaping the identity that would later define SB19's rise in the P-pop scene. Over time, SB19 has become a symbol of the fusion between global pop influences and Filipino creativity. Their story highlights teamwork, dedication, and the transformative power of music, inspiring countless fans and aspiring artists across the Philippines and beyond.`,
         image_url: '/images/About.jpg',
         order: 1
       },
       {
         title: 'Musical Evolution & Milestones',
-        content_paragraph_1: `SB19's journey from their debut album Get in the Zone to Pagsibol showcased their evolution as artists — blending heartfelt lyricism, dynamic performances, and modern pop experimentation that set new standards for P-pop.`,
-        content_paragraph_2: `Their single "Bazinga" became a cultural phenomenon, dominating the Billboard Hot Trending Songs chart for weeks and proving the group's global appeal.`,
-        content_paragraph_3: `In 2021, SB19 became the first Southeast Asian act nominated for a Billboard Music Award, marking a historic milestone and solidifying their status as pioneers who continue to elevate Filipino music on the world stage.`,
+        content: `SB19's journey from their debut album Get in the Zone to Pagsibol showcased their evolution as artists — blending heartfelt lyricism, dynamic performances, and modern pop experimentation that set new standards for P-pop. Their single "Bazinga" became a cultural phenomenon, dominating the Billboard Hot Trending Songs chart for weeks and proving the group's global appeal. In 2021, SB19 became the first Southeast Asian act nominated for a Billboard Music Award, marking a historic milestone and solidifying their status as pioneers who continue to elevate Filipino music on the world stage.`,
         image_url: '/images/About1.jpg',
         order: 2
       },
       {
         title: 'The 1Z Entertainment – A New Chapter of SB19',
-        content_paragraph_1: `The 1Z Entertainment journey began when SB19 parted ways with ShowBT Philippines and decided to take full control of their artistry and direction. In 2023, they founded 1Z (pronounced "One Zone") as their own independent company — managing their creative vision, production, styling, and business under their own terms.`,
-        content_paragraph_2: `This new chapter highlights their authenticity and artistry — blending futuristic sounds, experimental visuals, and powerful storytelling that reflect their growth and individuality. Through 1Z, SB19 continues to inspire Filipinos to break limits, celebrate culture, and raise the P-pop flag globally.`,
+        content: `The 1Z Entertainment journey began when SB19 parted ways with ShowBT Philippines and decided to take full control of their artistry and direction. In 2023, they founded 1Z (pronounced "One Zone") as their own independent company — managing their creative vision, production, styling, and business under their own terms. This new chapter highlights their authenticity and artistry — blending futuristic sounds, experimental visuals, and powerful storytelling that reflect their growth and individuality. Through 1Z, SB19 continues to inspire Filipinos to break limits, celebrate culture, and raise the P-pop flag globally.`,
         quote: 'One Zone, One Dream, One SB19.',
         image_url: '/images/1Z.jpg',
         order: 3
@@ -35,7 +30,7 @@ async function seedCrudData() {
     ]);
 
     // Seed About Achievements
-    console.log('  ✓ Seeding about_achievements...');
+    console.log('Seeding about_achievements...');
     await AboutAchievement.bulkCreate([
       {
         title: '2018 — Debut',
@@ -56,7 +51,7 @@ async function seedCrudData() {
         order: 3
       },
       {
-        title: '2023–2025 — Recent Era',
+        title: '2023-2025 — Recent Era',
         description: 'The group continued releasing music, explored new sonic directions, and strengthened their global presence.',
         image_url: '/images/banner.jpg',
         order: 4
@@ -88,26 +83,26 @@ async function seedCrudData() {
     ]);
 
     // Seed About Footer
-    console.log('  ✓ Seeding about_footer...');
+    console.log('Seeding about_footer...');
     await AboutFooter.bulkCreate([
       {
         profile_name: "A'tin Jay",
         profile_image_url: '/images/Jay.jpg',
-        main_description: `We're two devoted A'tins who poured our hearts into designing this tribute to SB19 — a celebration of their artistry, growth, and impact. Built with passion, creativity, and teamwork, this website reflects our love for music and the fandom that unites us.`,
+        main_description: 'We\'re two devoted A\'tins who poured our hearts into designing this tribute to SB19 — a celebration of their artistry, growth, and impact. Built with passion, creativity, and teamwork, this website reflects our love for music and the fandom that unites us.',
         quote: 'We rise together, A\'tin forever.'
       },
       {
         profile_name: "A'tin Jo",
         profile_image_url: '/images/Jo.jpg',
-        main_description: `We're two devoted A'tins who poured our hearts into designing this tribute to SB19 — a celebration of their artistry, growth, and impact. Built with passion, creativity, and teamwork, this website reflects our love for music and the fandom that unites us.`,
+        main_description: 'We\'re two devoted A\'tins who poured our hearts into designing this tribute to SB19 — a celebration of their artistry, growth, and impact. Built with passion, creativity, and teamwork, this website reflects our love for music and the fandom that unites us.',
         quote: 'We rise together, A\'tin forever.'
       }
     ]);
 
-    console.log('✅ CRUD data seeded successfully!');
+    console.log('CRUD data seeded successfully!');
     process.exit(0);
   } catch (error) {
-    console.error('❌ Seeding failed:', error);
+    console.error('Seeding failed:', error);
     process.exit(1);
   }
 }

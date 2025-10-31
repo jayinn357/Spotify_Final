@@ -11,15 +11,7 @@ const AboutOrigin = sequelize.define('AboutOrigin', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  content_paragraph_1: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  content_paragraph_2: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  content_paragraph_3: {
+  content: {
     type: DataTypes.TEXT,
     allowNull: true
   },

@@ -289,10 +289,24 @@ export const getMemberTracks = async (req, res) => {
 // Get all tracks
 export const getAllTracks = async (req, res) => {
   try {
+    const { album_id } = req.query;
+    
+    // Build query with optional album_id filter
+    const whereClause = {};
+    
+    if (album_id) {
+      // Find album by spotify_id
+      const album = await Album.findOne({ where: { spotify_id: album_id } });
+      if (album) {
+        whereClause.album_id = album.id;
+      }
+    }
+    
     const dbTracks = await Track.findAll({
+      where: whereClause,
       include: [
         { model: Artist, as: 'artist', attributes: ['name', 'spotify_id'] },
-        { model: Album, as: 'album', attributes: ['name', 'images'] }
+        { model: Album, as: 'album', attributes: ['name', 'images', 'spotify_id'] }
       ],
       order: [['order_index', 'ASC'], ['id', 'DESC']]
     });
@@ -307,12 +321,14 @@ export const getAllTracks = async (req, res) => {
           name: track.title,
           artists: [{ name: track.artist ? track.artist.name : null }],
           album: {
+            id: track.album ? track.album.spotify_id : null,
             name: track.album ? track.album.name : null,
             images: albumImages
           },
           duration_ms: track.duration_ms,
           preview_url: localAudioUrl || track.spotify_external_url,
           local_audio_url: localAudioUrl,
+          localAudioUrl: localAudioUrl,  // Add camelCase version for MusicContext
           external_urls: { spotify: track.spotify_external_url }
         };
       });
