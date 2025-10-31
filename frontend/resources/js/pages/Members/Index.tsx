@@ -145,7 +145,7 @@ export default function Members() {
 
   if (loadingArtists) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-b from-gray-900 to-black flex items-center justify-center">
         <div className="text-yellow-400 text-xl">Loading members...</div>
       </div>
     );
@@ -155,12 +155,12 @@ export default function Members() {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+      <div className="min-h-screen bg-linear-to-b from-gray-900 to-black text-white">
         <div className="flex flex-col lg:flex-row" style={{ paddingTop: '50px' }}>
           {/* SIDEBAR / DROPDOWN */}
           {shouldShowDropdown ? (
             /* DROPDOWN MODE */
-            <div className="w-full lg:w-1/4 px-4 py-6">
+            <div className={`w-full lg:w-1/4 px-4 py-6 ${isPlayerOpen && isDesktop ? 'lg:fixed lg:top-[50px] lg:left-0 lg:z-50' : 'sticky'}`}>
               <button
                 onClick={() => setMobileDropdownOpen(!mobileDropdownOpen)}
                 className="w-full bg-gray-800 hover:bg-gray-700 text-white py-3 px-4 rounded-lg flex justify-between items-center transition"
@@ -207,7 +207,7 @@ export default function Members() {
             </div>
           ) : (
             /* SIDEBAR MODE */
-            <aside className="w-1/4 bg-gray-800 p-6 border-r border-gray-700">
+            <aside className="w-1/4 bg-gray-800 p-6 border-r border-gray-700 lg:sticky lg:top-[50px] lg:h-[calc(100vh-50px)] overflow-auto">
               <h2 className="text-2xl font-bold text-yellow-400 mb-6">Members</h2>
               <ul className="space-y-3">
                 {membersList.map(member => (
@@ -239,7 +239,7 @@ export default function Members() {
           )}
 
           {/* MAIN CONTENT */}
-          <main className="flex-1 p-8">
+          <main className={`flex-1 p-8 ${isPlayerOpen && isDesktop ? 'lg:pl-[25%]' : ''}`}>
             {currentArtist ? (
               <div>
                 {/* MEMBER INFO */}
@@ -267,14 +267,14 @@ export default function Members() {
                         onClick={() => playMemberPlaylist(currentTracks, currentArtist.name, 0)}
                         className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-lg font-semibold transition"
                       >
-                        Play All
+                        ▶️ Play All
                       </button>
                       <button
                         onClick={() => {
                           const shuffledTracks = [...currentTracks].sort(() => Math.random() - 0.5);
                           playMemberPlaylist(shuffledTracks, currentArtist.name, 0);
                         }}
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold transition"
+                        className="bg-gray-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold transition"
                       >
                         🔀 Shuffle
                       </button>

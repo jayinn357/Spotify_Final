@@ -16,6 +16,7 @@ import {
   // About Footer
   getAllAboutFooter,
   updateAboutFooter,
+  deleteAboutFooter,
   // Track Messages
   getAllTrackMessages,
   getTrackMessageByTrackId,
@@ -57,6 +58,7 @@ router.delete('/about-achievements/:id', deleteAboutAchievement);
 // ===== ABOUT FOOTER ROUTES =====
 router.get('/about-footer', getAllAboutFooter);
 router.put('/about-footer/:id', updateAboutFooter);
+router.delete('/about-footer/:id', deleteAboutFooter);
 
 // ===== TRACK MESSAGES ROUTES =====
 router.get('/track-messages', getAllTrackMessages);

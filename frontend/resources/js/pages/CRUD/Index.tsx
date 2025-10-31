@@ -390,6 +390,24 @@ export default function CRUDPage() {
     }
   };
 
+  const deleteFooter = async (id: number) => {
+    try {
+      const res = await fetch(`/api/crud/about-footer/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        showSuccess('Footer profile deleted successfully');
+        fetchAllData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Failed to delete footer profile');
+      }
+    } catch (err) {
+      setError('Error deleting footer profile');
+      console.error(err);
+    }
+  };
+
   const createTrackMessage = async (message: Omit<TrackMessage, 'id' | 'Track'>) => {
     try {
       const res = await fetch('/api/crud/track-messages', {
@@ -826,8 +844,8 @@ export default function CRUDPage() {
           {activeTab === 'footer' && (
             <div>
               <h2 className="text-2xl font-bold text-yellow-400 mb-4">Edit Footer</h2>
-              <p className="text-gray-400 mb-2">Update footer profiles (Edit only - Cannot add or delete)</p>
-              <p className="text-yellow-300 text-sm mb-6">ℹ️ These 2 footer profiles are fixed. You can only edit their content.</p>
+              <p className="text-gray-400 mb-2">Update or delete footer profiles (Edit / Delete)</p>
+              <p className="text-yellow-300 text-sm mb-6">ℹ️ You can edit or delete footer profiles here. Deleting will remove the profile from the site.</p>
               
               <div className="space-y-4">
                 {footerItems.map((footer) => (
@@ -900,12 +918,23 @@ export default function CRUDPage() {
                         <h3 className="text-xl font-bold text-yellow-400">{footer.profile_name}</h3>
                         <p className="text-gray-400 text-sm mt-2">{footer.main_description}</p>
                         <p className="text-yellow-300 italic mt-2">"{footer.quote}"</p>
-                        <button
-                          onClick={() => setEditingFooter(footer)}
-                          className="mt-3 bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded font-semibold"
-                        >
-                          Edit
-                        </button>
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={() => setEditingFooter(footer)}
+                            className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded font-semibold"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => confirmDelete(
+                              'Are you sure you want to delete this footer profile? This action cannot be undone.',
+                              () => deleteFooter(footer.id)
+                            )}
+                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-semibold"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -917,7 +946,7 @@ export default function CRUDPage() {
           {activeTab === 'messages' && (
             <div className="space-y-6">
               {/* Header with counts */}
-              <div className="flex items-center justify-between bg-gradient-to-r from-yellow-900/20 to-yellow-800/20 p-4 rounded-lg border border-yellow-500/30">
+              <div className="flex items-center justify-between bg-linear-to-r from-yellow-900/20 to-yellow-800/20 p-4 rounded-lg border border-yellow-500/30">
                 <div>
                   <h2 className="text-3xl font-bold text-yellow-400">Track Messages Manager</h2>
                   <p className="text-gray-400 mt-1">Create and edit inspirational messages for your tracks</p>

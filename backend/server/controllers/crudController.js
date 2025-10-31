@@ -190,6 +190,23 @@ export const updateAboutFooter = async (req, res) => {
   }
 };
 
+export const deleteAboutFooter = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const footerItem = await AboutFooter.findByPk(id);
+
+    if (!footerItem) {
+      return res.status(404).json({ error: 'Footer item not found' });
+    }
+
+    await footerItem.destroy();
+    res.json({ message: 'Footer item deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting footer item:', error);
+    res.status(500).json({ error: 'Failed to delete footer item' });
+  }
+};
+
 // ===== TRACK MESSAGES CRUD =====
 export const getAllTrackMessages = async (req, res) => {
   try {

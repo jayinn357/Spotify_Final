@@ -244,7 +244,7 @@ export default function Home() {
         <>
             {/* Hero Section */}
             <section
-                className="relative w-full min-h-screen bg-fixed bg-center bg-cover -mt-[1px] transition-all duration-1000 ease-in-out"
+                className="relative w-full min-h-screen bg-fixed bg-center bg-cover -mt-[px] transition-all duration-1000 ease-in-out"
                 style={{ 
                     backgroundImage: `url(${images[currentImage]})`,
                     minHeight: '80vh',
@@ -401,7 +401,7 @@ export default function Home() {
             </section>
 
             {/* Albums Section */}
-            <section className="p-8 bg-gradient-to-b from-gray-900 to-black min-h-[500px]">
+            <section className="p-8 bg-linear-to-b from-gray-900 to-black min-h-[500px]">
                 <h2 className="text-3xl font-bold text-yellow-400 mb-8 text-center">🎶 Albums</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                     <div 
@@ -457,7 +457,7 @@ export default function Home() {
             {/* Fun Section */}
             <section
                 ref={funSectionRef}
-                className="relative py-16 px-6 bg-gradient-to-br from-black via-yellow-600 to-black text-center text-white overflow-hidden"
+                className="relative py-16 px-6 bg-linear-to-br from-black via-yellow-600 to-black text-center text-white overflow-hidden"
             >
                 <h2 className="text-4xl font-extrabold mb-6 drop-shadow-lg fun-title">
                     Want Some Inspiration???

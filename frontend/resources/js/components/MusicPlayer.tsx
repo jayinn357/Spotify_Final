@@ -22,7 +22,7 @@ function AudioVisualizer({ isPlaying }: { isPlaying: boolean }) {
       {bars.map((height, i) => (
         <div
           key={i}
-          className={`w-1 bg-gradient-to-t from-yellow-400 via-yellow-300 to-yellow-200 rounded-full transition-all duration-150 ease-in-out ${
+          className={`w-1 bg-linear-to-t from-yellow-400 via-yellow-300 to-yellow-200 rounded-full transition-all duration-150 ease-in-out ${
             isPlaying ? 'opacity-100' : 'opacity-60'
           }`}
           style={{

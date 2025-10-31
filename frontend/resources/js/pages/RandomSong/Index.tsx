@@ -330,54 +330,90 @@ export default function RandomSong() {
         setHasChosenToday(true);
     }, []);
 
-    // Spin and select random song (prefer tracks with local audio)
+    // Spin and select random song — prioritize tracks with local audio that match spotify ID
     const handleSpin = () => {
         if (spinning || allTracks.length === 0) return;
-        
+
         // Check if user has already chosen today
         if (hasChosenToday) {
             setShowDailyLimitModal(true);
             return;
         }
 
+        // Start quick spin visually but pick and play immediately
         setSpinning(true);
 
-        setTimeout(() => {
-            const available = getAvailableSongs(allTracks, chosenSongs);
+        const available = getAvailableSongs(allTracks, chosenSongs);
 
-            // Prefer tracks that actually have a local audio file available
-            const availableWithAudio = available.filter(t => !!t.localAudioUrl);
+        const hasLocal = (t: any) => Boolean(t.localAudioUrl || t.local_audio_url || t.local_audio || t.preview_url || t.previewUrl);
 
-            // If there are available tracks with local audio, pick from them.
-            // Otherwise, fall back to previous behavior (pick from available or allTracks).
-            if (availableWithAudio.length > 0) {
-                const song = getRandomItem(availableWithAudio);
-                setRandomSong(song);
-                saveChosenSong(song.id);
-            } else if (available.length > 0) {
-                // No local-audio tracks among available; select from available (may be preview-only)
-                const song = getRandomItem(available);
-                setRandomSong(song);
-                saveChosenSong(song.id);
-            } else {
-                // Nothing available (all have been chosen) - reset chosen list and try to pick a local-audio track first
-                setChosenSongs([]);
+        const localUrlString = (t: any) => String(t.localAudioUrl || t.local_audio_url || t.local_audio || t.preview_url || t.previewUrl || '');
 
-                const allWithAudio = allTracks.filter(t => !!t.localAudioUrl);
-                if (allWithAudio.length > 0) {
-                    const song = getRandomItem(allWithAudio);
-                    setRandomSong(song);
-                    saveChosenSong(song.id);
-                } else {
-                    // No local-audio tracks at all in the pool; pick any track
-                    const song = getRandomItem(allTracks);
-                    setRandomSong(song);
-                    saveChosenSong(song.id);
-                }
-            }
+        // Use spotify_track_id specifically to match local audio filenames/URLs
+        const spotifyTrackIdOf = (t: any) => String(t.spotify_track_id || t.spotifyTrackId || '');
 
+        // Exact local matches: local file exists AND local_audio_url or localAudioUrl contains the spotify_track_id
+        const exactLocalMatches = available.filter((t: any) => {
+            if (!hasLocal(t)) return false;
+            const localStr = localUrlString(t).toLowerCase();
+            const spotifyTrackId = spotifyTrackIdOf(t).toLowerCase();
+            if (!spotifyTrackId) return false;
+            return localStr.includes(spotifyTrackId);
+        });
+
+        // Any local audio available
+        const availableWithAudio = available.filter((t: any) => hasLocal(t));
+
+        // Tracks with preview_url (fallback)
+        const availableWithPreview = available.filter((t: any) => Boolean(t.preview_url));
+
+        const pickAndSave = (song: any) => {
+            setRandomSong(song);
+            try { saveChosenSong(song.id); } catch {}
+            // Stop spinning so playback effect can run immediately
             setSpinning(false);
-        }, 1500);
+        };
+
+        // Selection priority: exact local matches -> any local audio -> preview -> fallback
+        if (exactLocalMatches.length > 0) {
+            pickAndSave(getRandomItem(exactLocalMatches));
+            return;
+        }
+
+        if (availableWithAudio.length > 0) {
+            pickAndSave(getRandomItem(availableWithAudio));
+            return;
+        }
+
+        if (availableWithPreview.length > 0) {
+            pickAndSave(getRandomItem(availableWithPreview));
+            return;
+        }
+
+        if (available.length > 0) {
+            pickAndSave(getRandomItem(available));
+            return;
+        }
+
+        // Nothing available (all chosen) - reset chosen list and try global pool
+        setChosenSongs([]);
+        const allExact = allTracks.filter((t: any) => {
+            if (!hasLocal(t)) return false;
+            return localUrlString(t).includes(spotifyTrackIdOf(t));
+        });
+        if (allExact.length > 0) {
+            pickAndSave(getRandomItem(allExact));
+            return;
+        }
+
+        const anyWithAudio = allTracks.filter((t: any) => hasLocal(t));
+        if (anyWithAudio.length > 0) {
+            pickAndSave(getRandomItem(anyWithAudio));
+            return;
+        }
+
+        // Final fallback
+        pickAndSave(getRandomItem(allTracks));
     };
 
     // When randomSong is set (and not spinning), auto-play using a local Audio element
@@ -526,7 +562,7 @@ export default function RandomSong() {
 
     return (
         <>
-            <div className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-purple-900 flex flex-col items-center justify-center py-12 px-4">
+            <div className="min-h-screen bg-linear-to-b from-black via-gray-900 to-purple-900 flex flex-col items-center justify-center py-12 px-4">
                 <h1 className="text-4xl font-extrabold text-yellow-400 mb-2 text-center">🎡 A'tInspired</h1>
                 <p className="text-lg text-purple-200 mb-8 text-center">Your Inspiration of the Day!</p>
                 
@@ -591,7 +627,7 @@ export default function RandomSong() {
                                 
                                 {randomSong.localAudioUrl ? (
                                     <button
-                                        className="px-8 py-3 rounded-full bg-gradient-to-r from-purple-600 via-yellow-400 to-purple-600 text-black font-bold text-xl shadow-xl hover:scale-105 transition"
+                                        className="px-8 py-3 rounded-full bg-linear-to-r from-purple-600 via-yellow-400 to-purple-600 text-black font-bold text-xl shadow-xl hover:scale-105 transition"
                                         onClick={handlePlay}
                                     >
                                             {isLocalPlaying ? 'Playing...' : '▶ Play Song'}
@@ -607,7 +643,7 @@ export default function RandomSong() {
                 {/* Goodbye Modal */}
                 {showGoodbyeModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-                        <div className="bg-gradient-to-br from-purple-900 via-gray-900 to-black p-8 rounded-2xl max-w-md w-full mx-4 text-center border-2 border-yellow-400">
+                        <div className="bg-linear-to-br from-purple-900 via-gray-900 to-black p-8 rounded-2xl max-w-md w-full mx-4 text-center border-2 border-yellow-400">
                             <div className="mb-6">
                                 <div className="w-20 h-20 mx-auto mb-4 rounded-full overflow-hidden border-4 border-yellow-400">
                                     <img
@@ -643,7 +679,7 @@ export default function RandomSong() {
                 {/* Daily Limit Modal */}
                 {showDailyLimitModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-                        <div className="bg-gradient-to-br from-red-900 via-gray-900 to-black p-8 rounded-2xl max-w-md w-full mx-4 text-center border-2 border-red-400">
+                        <div className="bg-linear-to-br from-red-900 via-gray-900 to-black p-8 rounded-2xl max-w-md w-full mx-4 text-center border-2 border-red-400">
                             <div className="mb-6">
                                 <div className="w-24 h-24 mx-auto mb-4">
                                     <img

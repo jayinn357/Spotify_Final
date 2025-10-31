@@ -92,7 +92,7 @@ export default function About() {
         <img
           src="/images/Artist_B.jpg"
           alt="SB19 hero"
-          className="absolute inset-0 w-full h-full object-cover [object-position:center_-350px]"
+          className="absolute inset-0 w-full h-full object-cover [object:center_-350px]"
         />
         <div className="absolute inset-0 bg-linear-to-b from-black/80 via-black/60 to-black/80"></div>
 
@@ -220,7 +220,7 @@ export default function About() {
                     description: item.description, 
                     image: item.image_url 
                   })}
-                  className="cursor-pointer bg-gradient-to-br from-gray-900/70 to-black/70 p-6 rounded-xl shadow-lg border border-yellow-400/10 
+                  className="cursor-pointer bg-linear-to-br from-gray-900/70 to-black/70 p-6 rounded-xl shadow-lg border border-yellow-400/10 
                             hover:scale-[1.03] hover:border-yellow-400/40 transition relative overflow-hidden group
                             h-[180px] flex flex-col justify-between"
                 >
@@ -274,8 +274,8 @@ export default function About() {
       </section>
 
       {/* FOOTER */}
-      <footer className="relative bg-gradient-to-t from-black via-gray-950 to-black text-gray-300 text-center py-5 px-6">
-        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-yellow-500/40 to-transparent"></div>
+      <footer className="relative bg-linear-to-t from-black via-gray-950 to-black text-gray-300 text-center py-5 px-6">
+        <div className="absolute inset-x-0 top-0 h-[px] bg-linear-to-r from-transparent via-yellow-500/40 to-transparent"></div>
 
         {/* PROFILE IMAGES */}
         <div className="flex justify-center space-x-12 mb-8">
