@@ -92,15 +92,15 @@ export default function About() {
         <img
           src="/images/Artist_B.jpg"
           alt="SB19 hero"
-          className="absolute inset-0 w-full h-full object-cover [object:center_-350px]"
+          className="absolute inset-0 w-full h-full object-cover object-center"
         />
         <div className="absolute inset-0 bg-linear-to-b from-black/80 via-black/60 to-black/80"></div>
 
         <div className="relative z-10 text-center px-6 font-poppins">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-yellow-300 tracking-tight drop-shadow-lg">
+          <h1 className="text-4xl md:text-5xl 2xl:text-3xl font-extrabold text-yellow-300 tracking-tight drop-shadow-lg">
             About SB19
           </h1>
-          <p className="mt-4 max-w-3xl mx-auto text-lg md:text-xl text-gray-300 leading-relaxed">
+          <p className="mt-4 max-w-3xl mx-auto text-lg md:text-xl 2xl:text-base text-gray-300 leading-relaxed">
             SB19 is a trailblazing Filipino pop group redefining music with passion,
             discipline, and purpose. Their artistry bridges cultures, blending global
             influences with deep Filipino roots, proving that talent knows no boundaries.
@@ -121,44 +121,44 @@ export default function About() {
             keyboard={{ enabled: true }}
             spaceBetween={24}
             slidesPerView={1}
-            className="max-w-6xl mx-auto"
+            className="max-w-6xl mx-auto 2xl:max-w-5xl"
           >
             {origins.map((origin, index) => (
               <SwiperSlide key={origin.id}>
-                <div className="grid md:grid-cols-2 gap-8 items-center">
+                <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
                   {index % 2 === 0 ? (
                     <>
                       <div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-4">
+                        <h2 className="text-xl sm:text-2xl md:text-2xl lg:text-3xl font-bold text-yellow-400 mb-4">
                           {origin.title}
                         </h2>
-                        <p className="text-gray-300 leading-relaxed whitespace-pre-line">
+                        <p className="text-sm sm:text-base md:text-base lg:text-lg text-gray-300 leading-relaxed whitespace-pre-line">
                           {origin.content}
                         </p>
                         {origin.quote && (
-                          <p className="text-yellow-400 mt-4 italic">
+                          <p className="text-sm sm:text-base md:text-base lg:text-lg text-gray-300 leading-relaxed whitespace-pre-line">
                             "{origin.quote}"
                           </p>
                         )}
                       </div>
                       <div className="flex justify-center md:justify-end">
-                        <div className="w-[380px] md:w-[420px] rounded-xl overflow-hidden shadow-xl border border-yellow-400/20 transform hover:scale-[1.02] transition-all duration-300">
-                          <img
-                            src={origin.image_url}
-                            alt={origin.title}
-                            className="w-full h-auto object-contain"
-                          />
-                        </div>
+                        <div className="w-full max-w-[420px] max-h-[260px] md:max-h-[300px] lg:max-h-none rounded-xl overflow-hidden shadow-xl border border-yellow-400/20 transform hover:scale-[1.02] transition-all duration-300">
+                        <img
+                          src={origin.image_url}
+                          alt={origin.title}
+                          className="w-full h-full object-cover object-center"
+                        />
+                      </div>
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="order-last md:order-first flex justify-center md:justify-start">
-                        <div className="w-[380px] md:w-[420px] rounded-xl overflow-hidden shadow-xl border border-yellow-400/20 transform hover:scale-[1.02] transition-all duration-300">
+                        <div className="w-full max-w-[420px] rounded-xl overflow-hidden shadow-xl border border-yellow-400/20 transform hover:scale-[1.02] transition-all duration-300">
                           <img
                             src={origin.image_url}
                             alt={origin.title}
-                            className="w-full h-[260px] md:h-[280px] object-contain object-center"
+                            className="w-full h-auto object-cover object-center"
                           />
                         </div>
                       </div>
@@ -183,11 +183,11 @@ export default function About() {
           </Swiper>
 
           {/* Custom navigation */}
-          <div className="hidden group-hover:flex absolute inset-y-0 justify-between items-center w-full px-2 pointer-events-none">
-            <button className="custom-prev pointer-events-auto bg-yellow-400/30 hover:bg-yellow-500/60 text-white rounded-full w-10 h-10 flex items-center justify-center transition transform hover:scale-110">
+          <div className="hidden group-hover:flex absolute inset-y-0 justify-between items-center w-full px-2">
+            <button type="button" aria-label="Previous slide" className="custom-prev pointer-events-auto z-20 bg-yellow-400/30 hover:bg-yellow-500/60 text-white rounded-full w-10 h-10 flex items-center justify-center transition transform -translate-x-2 md:-translate-x-6 hover:scale-110">
               ‹
             </button>
-            <button className="custom-next pointer-events-auto bg-yellow-400/30 hover:bg-yellow-500/60 text-white rounded-full w-10 h-10 flex items-center justify-center transition transform hover:scale-110">
+            <button type="button" aria-label="Next slide" className="custom-next pointer-events-auto z-20 bg-yellow-400/30 hover:bg-yellow-500/60 text-white rounded-full w-10 h-10 flex items-center justify-center transition transform translate-x-2 md:translate-x-6 hover:scale-110">
               ›
             </button>
           </div>
@@ -208,6 +208,7 @@ export default function About() {
             breakpoints={{
               640: { slidesPerView: 2 },
               1024: { slidesPerView: 3 },
+              1280: { slidesPerView: 4 },
             }}
             loop={true}
             className="pb-10"
@@ -251,7 +252,7 @@ export default function About() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="bg-gray-900 p-6 rounded-2xl max-w-lg w-full text-center relative"
+              className="bg-gray-900 p-6 rounded-2xl max-w-3xl w-full text-center relative"
             >
               <button
                 onClick={() => setActiveCard(null)}
@@ -278,7 +279,7 @@ export default function About() {
         <div className="absolute inset-x-0 top-0 h-[px] bg-linear-to-r from-transparent via-yellow-500/40 to-transparent"></div>
 
         {/* PROFILE IMAGES */}
-        <div className="flex justify-center space-x-12 mb-8">
+        <div className="flex flex-wrap justify-center gap-8 mb-8">
           {footerItems.map((item) => (
             <div key={item.id} className="flex flex-col items-center">
               <div className="relative group">
@@ -295,7 +296,6 @@ export default function About() {
             </div>
           ))}
         </div>
-
         {/* DESCRIPTION */}
         {footerItems.length > 0 && (
           <p className="max-w-2xl mx-auto text-sm leading-relaxed text-gray-400 mb-1 px-4">

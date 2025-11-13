@@ -244,13 +244,23 @@ export default function Home() {
         <>
             {/* Hero Section */}
             <section
-                className="relative w-full min-h-screen bg-fixed bg-center bg-cover -mt-[px] transition-all duration-1000 ease-in-out"
-                style={{ 
+                className="
+                    relative w-full overflow-hidden
+                    bg-center bg-no-repeat transition-all duration-1000 ease-in-out
+                    sm:bg-cover bg-contain
+                "
+                style={{
                     backgroundImage: `url(${images[currentImage]})`,
-                    minHeight: '80vh',
-                    height: '80dvh'
+                    backgroundAttachment: window.innerWidth >= 640 ? 'fixed' : 'scroll', // desktop only fixed
+                    backgroundPosition: 'top center',
+                     backgroundPositionY: "50px",
+                    backgroundRepeat: 'no-repeat',
+                    backgroundSize: window.innerWidth >= 640 ? 'cover' : 'contain', // 👈 fix: show full image on mobile
                 }}
-            >
+                >
+                {/* Create aspect ratio for consistent banner height */}
+                <div className="aspect-[16/9] sm:aspect-[21/9] w-full"></div>
+
                 {/* Fading overlay on scroll */}
                 <div
                     className="absolute inset-0 bg-black"
@@ -258,13 +268,13 @@ export default function Home() {
                 ></div>
 
                 {/* Overlay Logo */}
-                <div className="absolute bottom-12 left-0 w-full flex items-center px-8 md:px-16 py-4">
-                    <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-yellow-400 shadow-lg">
-                        <img
-                            src="/images/logo.jpg"
-                            alt="SB19 Logo"
-                            className="w-full h-full object-cover"
-                        />
+                <div className="absolute bottom-2 left-4 sm:bottom-12 sm:left-16 flex items-center">
+                    <div className="w-20 h-20 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-yellow-400 shadow-lg">
+                    <img
+                        src="/images/logo.jpg"
+                        alt="SB19 Logo"
+                        className="w-full h-full object-cover"
+                    />
                     </div>
                 </div>
 
@@ -284,13 +294,13 @@ export default function Home() {
             {/* Popular Songs Section */}
             <section className="py-12 px-6 bg-black text-white">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-3xl font-bold text-yellow-400">🔥 Popular Songs</h2>
+                    <h2 className="text-2xl font-bold text-yellow-400">🔥 Popular Songs</h2>
                     <button 
                         onClick={() => {
                             setShowAllSongsModal(true);
                             fetchAllGroupSongs();
                         }}
-                        className="text-yellow-400 hover:text-yellow-300 font-semibold border border-yellow-400 hover:border-yellow-300 px-4 py-2 rounded-full transition-all"
+                        className="text-yellow-400 hover:text-yellow-300 font-semibold text-sm border border-yellow-400 hover:border-yellow-300 px-4 py-2 rounded-full transition-all"
                     >
                         View All SB19 Songs
                     </button>

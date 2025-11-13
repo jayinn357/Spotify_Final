@@ -32,11 +32,11 @@ export default function Navbar() {
     <nav className="bg-black/90 backdrop-blur-md text-white shadow-lg fixed w-full z-50">
             <div className="w-full px-6 py-3 flex items-center justify-between">
                 {/* Logo */}
-                            <Link to="/" className="flex items-center space-x-3 group">
+                            <Link to="/" className="flex items-center space-x-3 group" onClick={() => setMobileOpen(false)}>
                                 <div className="h-12 w-12 rounded-full overflow-hidden">
                                     <img src="/images/system_logo2.png" alt="MAHALIMA Logo" className="h-full w-full object-cover" />
                                 </div>
-                                <span className="text-2xl font-extrabold tracking-wide text-yellow-400 group-hover:text-yellow-300 transition">MAHALIMA</span>
+                                <span className="text-xl md:text-2xl font-extrabold tracking-wide text-yellow-400 group-hover:text-yellow-300 transition">MAHALIMA</span>
                             </Link>
 
                 {/* Desktop Menu */}
@@ -108,12 +108,13 @@ export default function Navbar() {
             </div>
 
             {/* Mobile Dropdown */}
-            {mobileOpen && (
+                {mobileOpen && (
                 <div className="md:hidden bg-black/95 px-6 pb-4 space-y-2 border-t border-gray-800">
                     {navLinks.map((link) => (
                         <Link
                             key={link.name}
                             to={link.href}
+                            onClick={() => setMobileOpen(false)}
                             className={`block py-2 hover:text-yellow-400 transition 
                                 ${location.pathname === link.href ? "text-yellow-400" : ""}`}
                         >
