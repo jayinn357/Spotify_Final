@@ -136,15 +136,18 @@ const ID_TO_MEMBER = {
 const checkLocalAudio = (spotifyId) => {
   const folders = ['sb19', 'pablo', 'josh', 'justin', 'stell', 'felip'];
   
+  // Audio files are in frontend/public/audio
+  const frontendAudioPath = path.join(__dirname, '../../../frontend/public/audio');
+  
   for (const folder of folders) {
-    const audioPath = path.join(__dirname, '../../public/audio', folder, `${spotifyId}.mp3`);
+    const audioPath = path.join(frontendAudioPath, folder, `${spotifyId}.mp3`);
     if (fs.existsSync(audioPath)) {
       return `/audio/${folder}/${spotifyId}.mp3`;
     }
   }
   
   // Check flat structure
-  const flatPath = path.join(__dirname, '../../public/audio', `${spotifyId}.mp3`);
+  const flatPath = path.join(frontendAudioPath, `${spotifyId}.mp3`);
   if (fs.existsSync(flatPath)) {
     return `/audio/${spotifyId}.mp3`;
   }

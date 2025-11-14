@@ -83,93 +83,31 @@ export default function RandomSong() {
                     console.error('Error fetching track messages:', error);
                 }
 
-                const allTracksData: Track[] = [];
-
-                // 1. Fetch SB19 popular tracks from your database (like Home page)
-                try {
-                    const popularResponse = await fetch(`/api/tracks/sb19/popular`);
-                    if (popularResponse.ok) {
-                        const popularData = await popularResponse.json();
-                        if (popularData.tracks && popularData.tracks.length > 0) {
-                            allTracksData.push(...popularData.tracks.map((track: unknown) => {
-                                const t = track as { local_audio_url?: string; preview_url?: string };
-                                return {
-                                    ...t,
-                                    // Keep a localAudioUrl for UI and also set preview_url so MusicPlayer will use it
-                                    localAudioUrl: t.local_audio_url ?? t.preview_url ?? null,
-                                    preview_url: t.local_audio_url ?? t.preview_url ?? null
-                                };
-                            }));
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error fetching popular tracks:', error);
+                // Fetch all tracks from database with local audio files
+                const response = await fetch('/api/tracks');
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('API response:', data);
+                    console.log('Total tracks received:', data.tracks?.length || 0);
+                    
+                    // Map tracks and ensure localAudioUrl is set
+                    const allTracksData = (data.tracks || []).map((track: any) => ({
+                        ...track,
+                        localAudioUrl: track.local_audio_url || track.localAudioUrl || track.preview_url
+                    }));
+                    
+                    // Filter only tracks that have local audio files
+                    const tracksWithAudio = allTracksData.filter((track: any) => {
+                        const hasLocal = track.localAudioUrl && !track.localAudioUrl.includes('spotify.com');
+                        console.log(`Track "${track.name}": localAudioUrl = ${track.localAudioUrl}, hasLocal = ${hasLocal}`);
+                        return hasLocal;
+                    });
+                    
+                    console.log('Tracks with local audio:', tracksWithAudio.length);
+                    setAllTracks(tracksWithAudio);
+                } else {
+                    console.error('Failed to fetch tracks from /api/tracks');
                 }
-
-                // 2. Fetch SB19 top tracks from Spotify API (like Members page)
-                const SB19_ARTIST_ID = "3g7vYcdDXnqnDKYFwqXBJP";
-                try {
-                    const sb19Response = await fetch(`/api/spotify/artists/${SB19_ARTIST_ID}/top-tracks?market=PH`);
-                    if (sb19Response.ok) {
-                        const sb19Data = await sb19Response.json();
-                        if (sb19Data.tracks && sb19Data.tracks.length > 0) {
-                            allTracksData.push(...sb19Data.tracks.map((track: unknown) => {
-                                const t = track as { id?: string; local_audio_url?: string; preview_url?: string };
-                                const local = t.local_audio_url ?? t.preview_url ?? null;
-                                if (local) console.debug('RandomSong: mapping track', t.id, 'preview_url =>', local);
-                                return {
-                                    ...t,
-                                    localAudioUrl: local,
-                                    preview_url: local
-                                };
-                            }));
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error fetching SB19 tracks:', error);
-                }
-
-                // 3. Fetch member tracks (like Members page)
-                const memberArtistIds = [
-                    "7wY8cwtF13xDJIHO7htMNk", // PABLO
-                    "3xn2W0ziGURPYJj372a6jQ", // JOSH CULLEN
-                    "4bpUKZGsImgabgDABbThr0", // STELL
-                    "2tEFDBihLXytoPl4xdResl", // FELIP
-                    "20XuMlpFudMP9rDHMTkyar" // JUSTIN
-                ];
-
-                // Fetch member tracks from DB endpoint so we get stored local_audio_url (same as Members page)
-                for (const memberId of memberArtistIds) {
-                    try {
-                        const response = await fetch(`/api/tracks/member/${memberId}`);
-                        if (response.ok) {
-                            const memberData = await response.json();
-                            if (memberData.tracks && memberData.tracks.length > 0) {
-                                allTracksData.push(...memberData.tracks.map((track: unknown) => {
-                                    const t = track as { local_audio_url?: string; preview_url?: string };
-                                    return {
-                                        ...t,
-                                        // DB endpoint maps preview_url => local_audio_url, keep both fields
-                                        localAudioUrl: t.preview_url ?? t.local_audio_url ?? null,
-                                        preview_url: t.preview_url ?? t.local_audio_url ?? null
-                                    };
-                                }));
-                            }
-                        }
-                    } catch {
-                        console.error(`Error fetching DB member tracks for ${memberId}`);
-                    }
-                }
-
-                // Remove duplicates based on track ID
-                const uniqueTracks = Array.from(
-                    new Map(allTracksData.map(track => [track.id, track])).values()
-                );
-
-                // Production: don't expose debug info
-                console.log('Debug: Setting tracks data');
-
-                setAllTracks(uniqueTracks);
 
                 // Background probes removed — server now reports has_local_audio reliably
             } catch (error) {
@@ -184,18 +122,19 @@ export default function RandomSong() {
 
     // Load chosen songs from localStorage and check daily limit
     useEffect(() => {
-        // Check if user has already chosen today
-        setHasChosenToday(hasChosenTodayFromStorage());
+        // COMMENTED OUT FOR TESTING: Check if user has already chosen today
+        // setHasChosenToday(hasChosenTodayFromStorage());
         
         const data = localStorage.getItem("sb19_random_songs");
         if (data) {
             try {
                 const parsed = JSON.parse(data);
-                const now = Date.now();
-                const filtered = parsed.filter(
-                    (entry: { id: string; time: number }) => now - entry.time < 7 * 24 * 60 * 60 * 1000
-                );
-                setChosenSongs(filtered.map((entry: { id: string }) => entry.id));
+                // const now = Date.now();
+                // const filtered = parsed.filter(
+                //     (entry: { id: string; time: number }) => now - entry.time < 7 * 24 * 60 * 60 * 1000
+                // );
+                // setChosenSongs(filtered.map((entry: { id: string }) => entry.id));
+                setChosenSongs(parsed.map((entry: { id: string }) => entry.id));
             } catch (error) {
                 console.error('Error parsing chosen songs:', error);
                 localStorage.removeItem("sb19_random_songs");
@@ -221,20 +160,20 @@ export default function RandomSong() {
         localStorage.setItem("sb19_random_songs", JSON.stringify(arr));
         setChosenSongs(prev => [...prev, songId]);
         
-        // Mark today as chosen
-        markChosenToday();
-        setHasChosenToday(true);
+        // COMMENTED OUT FOR TESTING: Mark today as chosen
+        // markChosenToday();
+        // setHasChosenToday(true);
     }, []);
 
     // Spin and select random song — prioritize tracks with local audio that match spotify ID
     const handleSpin = () => {
         if (spinning || allTracks.length === 0) return;
 
-        // Check if user has already chosen today
-        if (hasChosenToday) {
-            setShowDailyLimitModal(true);
-            return;
-        }
+        // COMMENTED OUT FOR TESTING: Check if user has already chosen today
+        // if (hasChosenToday) {
+        //     setShowDailyLimitModal(true);
+        //     return;
+        // }
 
         // Start quick spin visually but pick and play immediately
         setSpinning(true);
@@ -334,13 +273,15 @@ export default function RandomSong() {
         // Don't auto-play while spinning
         if (spinning) return;
 
-        // Use preview_url (which we map to local path when available)
-        const src = randomSong.preview_url ?? randomSong.localAudioUrl ?? null;
+        // Use local audio path only
+        const src = randomSong.localAudioUrl;
         if (!src) {
-            // nothing to play
+            console.log('No local audio URL for track:', randomSong.name);
             stopLocal();
             return;
         }
+        
+        console.log('Playing local audio:', src);
 
         // Create audio element and play without opening global MusicPlayer
         stopLocal();
@@ -348,13 +289,20 @@ export default function RandomSong() {
         localAudioRef.current = audio;
         audio.src = src;
         audio.preload = 'auto';
+        audio.volume = 1.0;
 
         const onCanPlay = () => {
             audio.play().then(() => {
                 setIsLocalPlaying(true);
-            }).catch(() => {
+            }).catch((err) => {
+                console.error('Play failed:', err);
                 setIsLocalPlaying(false);
             });
+        };
+
+        const onError = (e: any) => {
+            console.error('Audio error:', e, 'src:', src);
+            setIsLocalPlaying(false);
         };
 
         const onEnded = () => {
@@ -370,6 +318,7 @@ export default function RandomSong() {
         };
 
         audio.addEventListener('canplaythrough', onCanPlay, { once: true });
+        audio.addEventListener('error', onError);
         audio.addEventListener('ended', onEnded);
         audio.load();
 
@@ -380,6 +329,7 @@ export default function RandomSong() {
                 // Ignore pause errors
             }
             audio.removeEventListener('canplaythrough', onCanPlay);
+            audio.removeEventListener('error', onError);
             audio.removeEventListener('ended', onEnded);
             if (localAudioRef.current === audio) {
                 localAudioRef.current = null;
@@ -388,10 +338,69 @@ export default function RandomSong() {
         };
     }, [randomSong, spinning]);
 
-// Get song quote - from database only
-const getSongQuote = (song: Track) => {
-    return trackMessages[song.name] || "Music is the language of the soul";
-};    // Get song image (return null when not available to avoid empty src)
+    // Simple play handler using useMusic context like Home and Members pages
+    const handlePlay = () => {
+        if (!randomSong) {
+            return;
+        }
+
+        // If audio element exists and is paused, just resume it
+        if (localAudioRef.current && !isLocalPlaying) {
+            localAudioRef.current.play().then(() => {
+                setIsLocalPlaying(true);
+            }).catch(() => {
+                setIsLocalPlaying(false);
+            });
+            return;
+        }
+
+        // If no audio element yet, create and play
+        if (!localAudioRef.current) {
+            const src = randomSong.preview_url ?? randomSong.localAudioUrl ?? null;
+            if (!src) return;
+
+            const audio = new Audio();
+            localAudioRef.current = audio;
+            audio.src = src;
+            audio.volume = 1.0;
+
+            const onCanPlay = () => {
+                audio.play().then(() => {
+                    setIsLocalPlaying(true);
+                }).catch(() => {
+                    setIsLocalPlaying(false);
+                });
+            };
+
+            const onError = () => {
+                console.error('Audio failed to load:', src);
+                setIsLocalPlaying(false);
+            };
+
+            const onEnded = () => {
+                if (localAudioRef.current) {
+                    localAudioRef.current.currentTime = 0;
+                    localAudioRef.current.play().then(() => {
+                        setIsLocalPlaying(true);
+                    }).catch(() => {
+                        setIsLocalPlaying(false);
+                    });
+                }
+            };
+
+            audio.addEventListener('canplaythrough', onCanPlay, { once: true });
+            audio.addEventListener('error', onError);
+            audio.addEventListener('ended', onEnded);
+            audio.load();
+        }
+    };
+
+    // Get song quote - from database only
+    const getSongQuote = (song: Track) => {
+        return trackMessages[song.name] || "Music is the language of the soul";
+    };
+
+    // Get song image (return null when not available to avoid empty src)
     const getSongImage = (song: Track): string | null => {
         if (song.album?.images && song.album.images.length > 0 && song.album.images[0].url) {
             return song.album.images[0].url;
@@ -475,15 +484,20 @@ const getSongQuote = (song: Track) => {
                                     "{getSongQuote(randomSong)}"
                                 </blockquote>
                                 
-                                {randomSong && randomSong.localAudioUrl && isLocalPlaying ? (
+                                {isLocalPlaying ? (
                                     <button
                                         className="px-8 py-3 rounded-full bg-red-600 text-white font-bold text-xl shadow-xl hover:scale-105 transition"
                                         onClick={() => setShowGoodbyeModal(true)}
                                     >
                                         ⏹ Stop Music
                                     </button>
-                                ) : randomSong && randomSong.localAudioUrl ? (
-                                    <p className="text-yellow-400 italic">Auto-playing...</p>
+                                ) : randomSong.localAudioUrl || randomSong.preview_url ? (
+                                    <button
+                                        className="px-8 py-3 rounded-full bg-linear-to-r from-purple-600 via-yellow-400 to-purple-600 text-black font-bold text-xl shadow-xl hover:scale-105 transition"
+                                        onClick={handlePlay}
+                                    >
+                                        ▶ Play Song
+                                    </button>
                                 ) : (
                                     <p className="text-gray-400 italic">No audio available</p>
                                 )}
