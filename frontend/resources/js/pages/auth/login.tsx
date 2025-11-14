@@ -43,8 +43,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
 
     return (
         <>
-            <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center p-4">
-                {/* Background Pattern */}
+            <div className="min-h-screen bg-linear-to-br from-black via-gray-900 to-black flex items-center justify-center p-4">
                 <div className="absolute inset-0 overflow-hidden">
                     <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-yellow-400/5 rounded-full blur-3xl"></div>
                     <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-yellow-400/3 rounded-full blur-3xl"></div>
@@ -167,7 +166,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="w-full flex items-center justify-center px-4 py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black font-semibold rounded-lg hover:from-yellow-500 hover:to-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full flex items-center justify-center px-4 py-3 bg-linear-to-r from-yellow-400 to-yellow-500 text-black font-semibold rounded-lg hover:from-yellow-500 hover:to-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {processing ? (
                                     <>
@@ -186,7 +185,13 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                         {/* Additional Links */}
                         <div className="mt-6 pt-6 border-t border-gray-700">
                             <p className="text-center text-sm text-gray-400">
-                                For demo purposes, use any email/password
+                                Don't have an account?{' '}
+                                <Link
+                                    to="/register"
+                                    className="text-yellow-400 hover:text-yellow-300 transition font-medium"
+                                >
+                                    Register here
+                                </Link>
                             </p>
                         </div>
                     </div>

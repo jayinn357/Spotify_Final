@@ -1,6 +1,7 @@
+// imports
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
-// Animated Audio Visualizer Component
+// audio bars when audio/track is playing
 function AudioVisualizer({ isPlaying }: { isPlaying: boolean }) {
   const [bars, setBars] = useState(Array(5).fill(8));
   
@@ -35,6 +36,7 @@ function AudioVisualizer({ isPlaying }: { isPlaying: boolean }) {
   );
 }
 
+// blueprint or the structure of a track
 interface Track {
   id: string;
   name: string;
@@ -47,6 +49,7 @@ interface Track {
   artists: Array<{ name: string }>;
 }
 
+// define what data the music player will receive
 interface MusicPlayerProps {
   isOpen: boolean;
   currentTrack: Track | null;
@@ -58,6 +61,7 @@ interface MusicPlayerProps {
   authUser?: unknown | null;
 }
 
+// setup the music player component and its functionality
 export default function MusicPlayer({
   isOpen,
   currentTrack,
@@ -70,13 +74,13 @@ export default function MusicPlayer({
 }: MusicPlayerProps) {
   const user = authUser ?? null;
 
-  // Hooks must be called unconditionally at the top level of the component
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // skipping or going back tracks
   const handleNext = useCallback(() => {
     if (playlist && currentIndex < playlist.length - 1) {
       onTrackChange(currentIndex + 1);
@@ -89,12 +93,12 @@ export default function MusicPlayer({
     }
   }, [currentIndex, onTrackChange]);
 
-  // Initialize audio when track changes (prefer local file, fallback to preview_url)
   useEffect(() => {
     if (!user || !currentTrack || !isOpen) {
       return;
     }
 
+  // loading and playing audio - most important
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -107,6 +111,7 @@ export default function MusicPlayer({
     const audio = new Audio();
     audioRef.current = audio;
 
+    // listen for audio events - save song duration/update current time/ song ended, play next/autoplay
     const setupEventListeners = () => {
       audio.addEventListener('loadedmetadata', () => {
         setDuration(audio.duration);
@@ -118,7 +123,6 @@ export default function MusicPlayer({
         handleNext();
       });
       audio.addEventListener('canplaythrough', () => {
-        // Auto-play when audio is ready
         audio.play().then(() => {
             setIsPlaying(true);
           }).catch(() => {
@@ -127,19 +131,18 @@ export default function MusicPlayer({
         }, { once: true });
       };
 
+      //fallback to preview url if local audio not found
       const tryPreviewUrl = () => {
         if (currentTrack.preview_url) {
           audio.src = currentTrack.preview_url;
           audio.load();
         } else {
-          // No audio available — skip to next track immediately
-          console.log(`⏭️ Skipping track "${currentTrack.name}" - no audio URL available`);
           setIsPlaying(false);
           handleNext();
         }
       };
 
-      // Helper function to determine artist folder
+      // determine which folder to look into based on the artist name
       const getArtistFolder = (artistName: string): string => {
         const name = artistName.toLowerCase();
         if (name.includes('sb19') || name === 'sb19') return 'sb19';
@@ -148,10 +151,10 @@ export default function MusicPlayer({
         if (name.includes('justin') || name === 'justin') return 'justin';
         if (name.includes('stell') || name === 'stell') return 'stell';
         if (name.includes('felip') || name === 'felip') return 'felip';
-        return 'sb19'; // default fallback
+        return 'sb19'; 
       };
 
-      // Try multiple local audio paths
+      // tries multiple possible paths of audio files location
       const tryLocalAudio = async (urlsToTry: string[], index = 0): Promise<void> => {
         if (index >= urlsToTry.length) {
           tryPreviewUrl();
@@ -176,36 +179,29 @@ export default function MusicPlayer({
         audio.load();
       };
 
-      // Setup event listeners
       setupEventListeners();
 
-      // Build list of possible local audio URLs to try
+      // list of possible audio  file paths - if SB19 related, check SB19 folder first, else check artist folder
       const possibleUrls: string[] = [];
       
-      // Check if this is SB19 group content (popular songs or all songs)
       const isSB19GroupContent = playlistTitle?.includes("Popular SB19") || 
                                 playlistTitle?.includes("All SB19") ||
                                 playlistTitle?.includes("SB19");
       
       if (isSB19GroupContent) {
-        // For SB19 group content, try sb19 folder first
         possibleUrls.push(`/audio/sb19/${currentTrack.id}.mp3`);
-        console.log(`🎵 SB19 group content detected. Trying SB19 folder first for: ${currentTrack.name}`);
       } else {
-        // For member content, try artist-specific folder first
         if (currentTrack.artists && currentTrack.artists.length > 0) {
           const primaryArtist = currentTrack.artists[0].name;
           const artistFolder = getArtistFolder(primaryArtist);
           possibleUrls.push(`/audio/${artistFolder}/${currentTrack.id}.mp3`);
           
-          // If primary artist is not SB19, also try sb19 folder as fallback
           if (artistFolder !== 'sb19') {
             possibleUrls.push(`/audio/sb19/${currentTrack.id}.mp3`);
           }
         }
       }
       
-      // Try remaining artist folders as fallback (excluding already tried ones)
       const allFolders = ['sb19', 'pablo', 'josh', 'justin', 'stell', 'felip'];
       allFolders.forEach(folder => {
         const url = `/audio/${folder}/${currentTrack.id}.mp3`;
@@ -214,10 +210,8 @@ export default function MusicPlayer({
         }
       });
 
-      // Try flat structure as final fallback
       possibleUrls.push(`/audio/${currentTrack.id}.mp3`);
 
-      // Start trying local audio files
       tryLocalAudio(possibleUrls);
 
       return () => {
@@ -231,14 +225,13 @@ export default function MusicPlayer({
       };
   }, [currentTrack, isOpen, handleNext, playlistTitle, user]);
   
-  // Separate useEffect for volume changes to avoid re-initializing audio
+  // volume control - set audio volume when changed by the user
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
     }
   }, [volume]);
 
-  // Cleanup when component unmounts or closes
   useEffect(() => {
     if (!isOpen && audioRef.current) {
       audioRef.current.pause();
@@ -246,12 +239,14 @@ export default function MusicPlayer({
     }
   }, [isOpen]);
 
+  // convert seconds to readable time format
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // play or pause the audio
   const handlePlayPause = () => {
     if (!audioRef.current) {
       alert("No audio available for this track!");
@@ -271,6 +266,7 @@ export default function MusicPlayer({
     }
   };
 
+  // jump to a specific time when user drags the progress bar
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const seekTime = (parseFloat(e.target.value) / 100) * duration;
     if (audioRef.current) {
@@ -279,6 +275,7 @@ export default function MusicPlayer({
     }
   };
 
+  // adjust volume when user changes the volume slider
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseFloat(e.target.value) / 100;
     setVolume(newVolume);
@@ -291,14 +288,13 @@ export default function MusicPlayer({
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  // UI of the music player
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 z-50">
-      {/* Full Player Modal */}
       <div className="p-4">
-        {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <div className="text-yellow-400 font-semibold">
-            🎵 {playlistTitle}
+            {playlistTitle}
           </div>
           <button
             onClick={(e) => {
@@ -308,14 +304,12 @@ export default function MusicPlayer({
             }}
             className="text-gray-400 hover:text-white text-xl"
           >
-            ×
+            x
           </button>
         </div>
 
-        {/* Main Player */}
         <div className="flex items-center space-x-4">
-          {/* Album Art */}
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             {currentTrack.album?.images?.[0] ? (
               <img
                 src={currentTrack.album.images[0].url}
@@ -324,15 +318,14 @@ export default function MusicPlayer({
               />
             ) : (
               <div className="w-16 h-16 bg-gray-700 rounded-lg flex items-center justify-center">
-                🎵
+                <span className="text-gray-400">No Image</span>
               </div>
             )}
           </div>
 
-          {/* Track Info with Visualizer */}
-          <div className="flex-grow min-w-0">
+          <div className="grow min-w-0">
             <div className="flex items-center space-x-3">
-              <div className="flex-grow">
+              <div className="grow">
                 <h3 className="text-white font-medium truncate">{currentTrack.name}</h3>
                 <p className="text-gray-400 text-sm truncate">
                   {currentTrack.artists.map(a => a.name).join(', ')}
@@ -343,9 +336,7 @@ export default function MusicPlayer({
             </div>
           </div>
 
-          {/* Controls */}
           <div className="flex items-center space-x-4">
-            {/* Previous */}
             <button
               onClick={handlePrevious}
               className="text-gray-400 hover:text-white text-xl"
@@ -354,7 +345,6 @@ export default function MusicPlayer({
               ⏮
             </button>
 
-            {/* Play/Pause */}
             <button
               onClick={handlePlayPause}
               className="bg-yellow-400 text-black rounded-full w-12 h-12 flex items-center justify-center hover:bg-yellow-300 transition-colors"
@@ -392,7 +382,7 @@ export default function MusicPlayer({
             <span className="text-gray-400 text-xs w-10">
               {formatTime(currentTime)}
             </span>
-            <div className="flex-grow">
+            <div className="grow">
               <input
                 type="range"
                 min="0"
@@ -411,7 +401,7 @@ export default function MusicPlayer({
           </div>
         </div>
 
-        {/* Playlist Info */}
+        {/* Track Number in the overall Playlist */}
         <div className="mt-2 text-center">
           <span className="text-gray-500 text-xs">
             {currentIndex + 1} of {playlist.length} tracks

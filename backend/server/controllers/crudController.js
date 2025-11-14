@@ -2,7 +2,7 @@ import { Artist, AboutOrigin, AboutAchievement, AboutFooter, TrackMessage, Track
 import sequelize from '../config/database.js';
 import { Op } from 'sequelize';
 
-// ===== ARTISTS CRUD =====
+// Artists CRUD - SB19 as a group and members name individually
 export const getAllArtists = async (req, res) => {
   try {
     const artists = await Artist.findAll({
@@ -15,6 +15,7 @@ export const getAllArtists = async (req, res) => {
   }
 };
 
+// Updating artists information
 export const updateArtist = async (req, res) => {
   try {
     const { id } = req.params;
@@ -33,7 +34,7 @@ export const updateArtist = async (req, res) => {
   }
 };
 
-// ===== ABOUT ORIGINS CRUD =====
+// Get all 'origin story' sections
 export const getAllAboutOrigins = async (req, res) => {
   try {
     const origins = await AboutOrigin.findAll({
@@ -46,6 +47,7 @@ export const getAllAboutOrigins = async (req, res) => {
   }
 };
 
+// Update origin section details
 export const updateAboutOrigin = async (req, res) => {
   try {
     const { id } = req.params;
@@ -64,6 +66,7 @@ export const updateAboutOrigin = async (req, res) => {
   }
 };
 
+// Adding new origin section
 export const createAboutOrigin = async (req, res) => {
   try {
     const { title, content, quote, image_url, order } = req.body;
@@ -83,6 +86,7 @@ export const createAboutOrigin = async (req, res) => {
   }
 };
 
+// deleting an origin section
 export const deleteAboutOrigin = async (req, res) => {
   try {
     const { id } = req.params;
@@ -100,7 +104,7 @@ export const deleteAboutOrigin = async (req, res) => {
   }
 };
 
-// ===== ABOUT ACHIEVEMENTS CRUD =====
+// returns all SB19 achievemetns in order
 export const getAllAboutAchievements = async (req, res) => {
   try {
     const achievements = await AboutAchievement.findAll({
@@ -113,6 +117,7 @@ export const getAllAboutAchievements = async (req, res) => {
   }
 };
 
+// add new achievements of SB19
 export const createAboutAchievement = async (req, res) => {
   try {
     const { title, description, image_url, order } = req.body;
@@ -124,6 +129,7 @@ export const createAboutAchievement = async (req, res) => {
   }
 };
 
+// update about achievement information of SB19
 export const updateAboutAchievement = async (req, res) => {
   try {
     const { id } = req.params;
@@ -142,6 +148,7 @@ export const updateAboutAchievement = async (req, res) => {
   }
 };
 
+// delete an achievement section
 export const deleteAboutAchievement = async (req, res) => {
   try {
     const { id } = req.params;
@@ -159,7 +166,7 @@ export const deleteAboutAchievement = async (req, res) => {
   }
 };
 
-// ===== ABOUT FOOTER CRUD =====
+// gets all footer member data for about page
 export const getAllAboutFooter = async (req, res) => {
   try {
     const footerItems = await AboutFooter.findAll({
@@ -172,6 +179,7 @@ export const getAllAboutFooter = async (req, res) => {
   }
 };
 
+// updates a creator's footer profile
 export const updateAboutFooter = async (req, res) => {
   try {
     const { id } = req.params;
@@ -190,6 +198,7 @@ export const updateAboutFooter = async (req, res) => {
   }
 };
 
+// delete a footer member profile
 export const deleteAboutFooter = async (req, res) => {
   try {
     const { id } = req.params;
@@ -207,7 +216,7 @@ export const deleteAboutFooter = async (req, res) => {
   }
 };
 
-// ===== TRACK MESSAGES CRUD =====
+// get all inspirational messages with track information
 export const getAllTrackMessages = async (req, res) => {
   try {
     const messages = await TrackMessage.findAll({
@@ -221,6 +230,7 @@ export const getAllTrackMessages = async (req, res) => {
   }
 };
 
+// gets inspirational message for a specific song/track
 export const getTrackMessageByTrackId = async (req, res) => {
   try {
     const { trackId } = req.params;
@@ -239,17 +249,16 @@ export const getTrackMessageByTrackId = async (req, res) => {
   }
 };
 
+// add inspirational message for tracks do not have yet
 export const createTrackMessage = async (req, res) => {
   try {
     const { track_id, message } = req.body;
-    
-    // Check if track exists
+
     const track = await Track.findByPk(track_id);
     if (!track) {
       return res.status(404).json({ error: 'Track not found' });
     }
-    
-    // Check if message already exists for this track
+
     const existing = await TrackMessage.findOne({ where: { track_id } });
     if (existing) {
       return res.status(400).json({ error: 'Message already exists for this track' });
@@ -263,6 +272,7 @@ export const createTrackMessage = async (req, res) => {
   }
 };
 
+// update existing inspirational message of a track
 export const updateTrackMessage = async (req, res) => {
   try {
     const { id } = req.params;
@@ -281,6 +291,7 @@ export const updateTrackMessage = async (req, res) => {
   }
 };
 
+// delete inspirational message
 export const deleteTrackMessage = async (req, res) => {
   try {
     const { id } = req.params;
@@ -298,7 +309,7 @@ export const deleteTrackMessage = async (req, res) => {
   }
 };
 
-// ===== TRACKS AUDIO MANAGEMENT =====
+// find tracks that do no have audio files yet
 export const getTracksWithoutAudio = async (req, res) => {
   try {
     const tracks = await Track.findAll({
@@ -322,9 +333,10 @@ export const getTracksWithoutAudio = async (req, res) => {
   }
 };
 
+// finding tracks that do not have messages yet
 export const getTracksWithoutMessages = async (req, res) => {
   try {
-    // Get all track IDs that already have messages
+    // Get all tracks that already have messages
     const tracksWithMessages = await TrackMessage.findAll({
       attributes: ['track_id']
     });
@@ -354,6 +366,7 @@ export const getTracksWithoutMessages = async (req, res) => {
   }
 };
 
+// update audio file URL for a track
 export const updateTrackAudio = async (req, res) => {
   try {
     const { id } = req.params;

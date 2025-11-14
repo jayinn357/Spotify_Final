@@ -1,9 +1,10 @@
+// imports
 import { validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import crypto from 'crypto';
 
-// Generate JWT token
+// Generates token using JWT (JSON Web Token) - valid for 7 days, so relogin required after
 const generateToken = (userId) => {
   return jwt.sign(
     { userId },
@@ -12,7 +13,7 @@ const generateToken = (userId) => {
   );
 };
 
-// Register
+// Register Function - validate if inputs are provided correctly
 export const register = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -33,14 +34,12 @@ export const register = async (req, res) => {
     // Create user
     const user = await User.create({ name, email, password });
 
-    // Generate token
     const token = generateToken(user.id);
 
-    // Set cookie
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000 
     });
 
     res.status(201).json({
@@ -54,7 +53,7 @@ export const register = async (req, res) => {
   }
 };
 
-// Login
+// Login - existing user
 export const login = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -64,7 +63,7 @@ export const login = async (req, res) => {
 
     const { email, password, remember } = req.body;
 
-    // Find user
+    // Find user in the database 
     const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(422).json({ 
@@ -72,7 +71,7 @@ export const login = async (req, res) => {
       });
     }
 
-    // Validate password
+    // Check if password matches (bcrypt comparison)
     const isValidPassword = await user.validatePassword(password);
     if (!isValidPassword) {
       return res.status(422).json({ 
@@ -80,15 +79,14 @@ export const login = async (req, res) => {
       });
     }
 
-    // Generate token
     const token = generateToken(user.id);
 
-    // Set cookie (include SameSite so browsers send cookie when frontend and backend run on different ports)
+    // stores cookie for 7 days if 'remember me' is checked
     const maxAge = remember ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'lax', //allows cookie when frontend/backend on different ports
       maxAge
     });
 
@@ -103,7 +101,7 @@ export const login = async (req, res) => {
   }
 };
 
-// Logout
+// Logout 
 export const logout = async (req, res) => {
   try {
     res.clearCookie('token');
@@ -114,59 +112,12 @@ export const logout = async (req, res) => {
   }
 };
 
-// Get current user
+// Get current user - returns infor about the currently logged-in user
 export const getUser = async (req, res) => {
   try {
     res.json({ user: req.user.toSafeObject() });
   } catch (error) {
     console.error('Get user error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-// Verify email
-export const verifyEmail = async (req, res) => {
-  try {
-    const { id, hash } = req.params;
-
-    const user = await User.findByPk(id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Verify hash (simple implementation - in production use proper hashing)
-    const expectedHash = crypto
-      .createHash('sha256')
-      .update(user.email)
-      .digest('hex');
-
-    if (hash !== expectedHash) {
-      return res.status(400).json({ message: 'Invalid verification link' });
-    }
-
-    // Mark email as verified
-    user.email_verified_at = new Date();
-    await user.save();
-
-    res.json({ message: 'Email verified successfully' });
-  } catch (error) {
-    console.error('Verify email error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-// Send verification email
-export const sendVerificationEmail = async (req, res) => {
-  try {
-    if (req.user.email_verified_at) {
-      return res.status(400).json({ message: 'Email already verified' });
-    }
-
-    // In production, send actual email
-    // For now, just return success
-    res.json({ message: 'Verification email sent' });
-  } catch (error) {
-    console.error('Send verification error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -178,12 +129,9 @@ export const forgotPassword = async (req, res) => {
 
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      // Don't reveal if user exists
       return res.json({ message: 'Password reset link sent if email exists' });
     }
 
-    // In production, generate token and send email
-    // For now, just return success
     res.json({ message: 'Password reset link sent' });
   } catch (error) {
     console.error('Forgot password error:', error);
@@ -196,8 +144,6 @@ export const resetPassword = async (req, res) => {
   try {
     const { email, password, token } = req.body;
 
-    // In production, verify token
-    // For now, simple implementation
     const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(400).json({ message: 'Invalid reset token' });
@@ -256,7 +202,6 @@ export const spotifyCallback = async (req, res) => {
       return res.redirect(`${process.env.FRONTEND_URL}/login?error=spotify_auth_failed`);
     }
 
-    // Exchange code for tokens (implement Spotify token exchange)
     // For now, redirect to frontend
     res.redirect(`${process.env.FRONTEND_URL}?spotify_auth=success`);
   } catch (error) {

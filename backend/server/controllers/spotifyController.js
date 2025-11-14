@@ -1,7 +1,7 @@
+// imports
 import axios from 'axios';
 import qs from 'qs';
 
-// Spotify API base URL
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1';
 
 // Get Spotify access token using client credentials

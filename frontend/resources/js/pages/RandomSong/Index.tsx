@@ -29,7 +29,7 @@ function getRandomItem<T>(arr: T[]): T {
 
 // Daily tracking utilities
 function getTodayDateString(): string {
-    return new Date().toDateString(); // e.g., "Mon Oct 07 2025"
+    return new Date().toDateString();
 }
 
 function hasChosenTodayFromStorage(): boolean {
@@ -46,7 +46,6 @@ export default function RandomSong() {
     const localAudioRef = useRef<HTMLAudioElement | null>(null);
     const [isLocalPlaying, setIsLocalPlaying] = useState(false);
     
-    // State for track messages from database
     const [trackMessages, setTrackMessages] = useState<Record<string, string>>({});
     const [allTracks, setAllTracks] = useState<Track[]>([]);
     const [randomSong, setRandomSong] = useState<Track | null>(null);
@@ -56,12 +55,7 @@ export default function RandomSong() {
     const [showGoodbyeModal, setShowGoodbyeModal] = useState(false);
     const [showDailyLimitModal, setShowDailyLimitModal] = useState(false);
     const [hasChosenToday, setHasChosenToday] = useState(false);
-    // debug panel removed in production
-    // const [debugOpen, ] = useState<boolean>(false);
-    // Remove unused debugTracks state since it's only used for logging
-    console.log('Debug tracks feature available for development');
 
-    // Fetch tracks from your API like Home and Members pages do
     useEffect(() => {
         const fetchAllTracks = async () => {
             setLoading(true);
@@ -90,7 +84,6 @@ export default function RandomSong() {
                     console.log('API response:', data);
                     console.log('Total tracks received:', data.tracks?.length || 0);
                     
-                    // Map tracks and ensure localAudioUrl is set
                     const allTracksData = (data.tracks || []).map((track: any) => ({
                         ...track,
                         localAudioUrl: track.local_audio_url || track.localAudioUrl || track.preview_url
@@ -109,7 +102,6 @@ export default function RandomSong() {
                     console.error('Failed to fetch tracks from /api/tracks');
                 }
 
-                // Background probes removed — server now reports has_local_audio reliably
             } catch (error) {
                 console.error('Error fetching tracks:', error);
             } finally {
@@ -120,21 +112,18 @@ export default function RandomSong() {
         fetchAllTracks();
     }, []);
 
-    // Load chosen songs from localStorage and check daily limit
     useEffect(() => {
-        // COMMENTED OUT FOR TESTING: Check if user has already chosen today
-        // setHasChosenToday(hasChosenTodayFromStorage());
+        setHasChosenToday(hasChosenTodayFromStorage());
         
         const data = localStorage.getItem("sb19_random_songs");
         if (data) {
             try {
                 const parsed = JSON.parse(data);
-                // const now = Date.now();
-                // const filtered = parsed.filter(
-                //     (entry: { id: string; time: number }) => now - entry.time < 7 * 24 * 60 * 60 * 1000
-                // );
-                // setChosenSongs(filtered.map((entry: { id: string }) => entry.id));
-                setChosenSongs(parsed.map((entry: { id: string }) => entry.id));
+                const now = Date.now();
+                const filtered = parsed.filter(
+                    (entry: { id: string; time: number }) => now - entry.time < 7 * 24 * 60 * 60 * 1000
+                );
+                setChosenSongs(filtered.map((entry: { id: string }) => entry.id));
             } catch (error) {
                 console.error('Error parsing chosen songs:', error);
                 localStorage.removeItem("sb19_random_songs");
@@ -142,7 +131,6 @@ export default function RandomSong() {
         }
     }, []);
 
-    // Save chosen song to localStorage
     const saveChosenSong = useCallback((songId: string) => {
         const now = Date.now();
         const data = localStorage.getItem("sb19_random_songs");
@@ -160,22 +148,18 @@ export default function RandomSong() {
         localStorage.setItem("sb19_random_songs", JSON.stringify(arr));
         setChosenSongs(prev => [...prev, songId]);
         
-        // COMMENTED OUT FOR TESTING: Mark today as chosen
-        // markChosenToday();
-        // setHasChosenToday(true);
+        markChosenToday();
+        setHasChosenToday(true);
     }, []);
 
-    // Spin and select random song — prioritize tracks with local audio that match spotify ID
+    // Spin and select random song
     const handleSpin = () => {
         if (spinning || allTracks.length === 0) return;
 
-        // COMMENTED OUT FOR TESTING: Check if user has already chosen today
-        // if (hasChosenToday) {
-        //     setShowDailyLimitModal(true);
-        //     return;
-        // }
-
-        // Start quick spin visually but pick and play immediately
+        if (hasChosenToday) {
+            setShowDailyLimitModal(true);
+            return;
+        }
         setSpinning(true);
 
         const available = getAvailableSongs(allTracks, chosenSongs);
@@ -184,10 +168,9 @@ export default function RandomSong() {
 
         const localUrlString = (t: any) => String(t.localAudioUrl || t.local_audio_url || t.local_audio || t.preview_url || t.previewUrl || '');
 
-        // Use spotify_track_id specifically to match local audio filenames/URLs
+        // Use spotify_track_id to match local audio filenames
         const spotifyTrackIdOf = (t: any) => String(t.spotify_track_id || t.spotifyTrackId || '');
 
-        // Exact local matches: local file exists AND local_audio_url or localAudioUrl contains the spotify_track_id
         const exactLocalMatches = available.filter((t: any) => {
             if (!hasLocal(t)) return false;
             const localStr = localUrlString(t).toLowerCase();
@@ -196,7 +179,6 @@ export default function RandomSong() {
             return localStr.includes(spotifyTrackId);
         });
 
-        // Any local audio available
         const availableWithAudio = available.filter((t: any) => hasLocal(t));
 
         // Tracks with preview_url (fallback)
@@ -205,7 +187,6 @@ export default function RandomSong() {
         const pickAndSave = (song: any) => {
             setRandomSong(song);
             try { saveChosenSong(song.id); } catch {}
-            // Stop spinning so playback effect can run immediately
             setSpinning(false);
         };
 
@@ -257,7 +238,6 @@ export default function RandomSong() {
         const stopLocal = () => {
             if (localAudioRef.current) {
                 try { localAudioRef.current.pause(); } catch {
-                    // Ignore pause errors
                 }
                 localAudioRef.current.src = '';
                 localAudioRef.current = null;
@@ -270,10 +250,8 @@ export default function RandomSong() {
             return;
         }
 
-        // Don't auto-play while spinning
         if (spinning) return;
 
-        // Use local audio path only
         const src = randomSong.localAudioUrl;
         if (!src) {
             console.log('No local audio URL for track:', randomSong.name);
@@ -326,7 +304,6 @@ export default function RandomSong() {
             try { 
                 audio.pause(); 
             } catch {
-                // Ignore pause errors
             }
             audio.removeEventListener('canplaythrough', onCanPlay);
             audio.removeEventListener('error', onError);

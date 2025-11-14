@@ -24,12 +24,6 @@ router.post('/logout', authenticate, authController.logout);
 // Get current user
 router.get('/user', authenticate, authController.getUser);
 
-// Verify email
-router.get('/email/verify/:id/:hash', authController.verifyEmail);
-
-// Send verification email
-router.post('/email/verification-notification', authenticate, authController.sendVerificationEmail);
-
 // Forgot password
 router.post('/forgot-password', [
   body('email').isEmail().withMessage('Valid email is required')

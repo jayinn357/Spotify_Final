@@ -27,22 +27,6 @@ const User = sequelize.define('User', {
   email_verified_at: {
     type: DataTypes.DATE,
     allowNull: true
-  },
-  spotify_id: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  spotify_token: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  spotify_refresh_token: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  remember_token: {
-    type: DataTypes.STRING(100),
-    allowNull: true
   }
 }, {
   tableName: 'users',
@@ -70,7 +54,7 @@ User.prototype.validatePassword = async function(password) {
 
 // Instance method to get safe user data (without password)
 User.prototype.toSafeObject = function() {
-  const { password, spotify_token, spotify_refresh_token, remember_token, ...safeUser } = this.toJSON();
+  const { password, ...safeUser } = this.toJSON();
   return safeUser;
 };
 

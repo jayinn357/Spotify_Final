@@ -11,44 +11,38 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Helper: persist an array of formatted tracks into DB. Each track should follow the formatted shape used by controllers
+// saves spotify track data to database
 const persistTracks = async (formattedTracks, markPopular = false) => {
   if (!Array.isArray(formattedTracks) || formattedTracks.length === 0) return;
 
   await sequelize.transaction(async (t) => {
     for (const tr of formattedTracks) {
       try {
-        // Determine primary artist (first in array)
         const primaryArtist = (tr.artists && tr.artists[0]) || null;
         const artistName = primaryArtist ? primaryArtist.name : 'Unknown Artist';
         const artistSpotifyId = primaryArtist ? primaryArtist.id : null;
 
-        // Find artist (DON'T create new artists - only use existing SB19 + 5 members)
+        // Find artist
         let artistInstance = null;
         if (artistSpotifyId) {
           artistInstance = await Artist.findOne({
             where: { spotify_id: artistSpotifyId },
             transaction: t
           });
-          // If artist doesn't exist in our DB (not SB19 or a member), skip this track
           if (!artistInstance) {
-            console.log(`Skipping track "${tr.name}" - artist ${artistName} (${artistSpotifyId}) not in our database`);
             continue;
           }
         } else {
-          // No spotify ID, try to find by name
+          // If there is no spotify ID, try to find by name
           artistInstance = await Artist.findOne({
             where: { name: artistName },
             transaction: t
           });
-          // If not found, skip
           if (!artistInstance) {
-            console.log(`Skipping track "${tr.name}" - artist ${artistName} not in our database`);
             continue;
           }
         }
 
-        // Album upsert
         let albumIdDb = null;
         if (tr.album && tr.album.id) {
           const albumSpotifyId = tr.album.id;
@@ -73,10 +67,8 @@ const persistTracks = async (formattedTracks, markPopular = false) => {
         const spotifyTrackId = tr.id || tr.spotify_track_id || tr.spotify_id || null;
         if (!spotifyTrackId) continue;
 
-        // Check existing
         const existing = await Track.findOne({ where: { spotify_track_id: spotifyTrackId }, transaction: t });
         if (existing) {
-          // Optionally update metadata if changed
           let needsSave = false;
           if (!existing.title && tr.name) { existing.title = tr.name; needsSave = true; }
           if (!existing.duration_ms && tr.duration_ms) { existing.duration_ms = tr.duration_ms; needsSave = true; }
@@ -102,13 +94,12 @@ const persistTracks = async (formattedTracks, markPopular = false) => {
         }, { transaction: t });
       } catch (err) {
         console.error('persistTracks internal error for track', tr && tr.id, err);
-        // continue on error for each track
       }
     }
   });
 };
 
-// Spotify configuration
+// Spotify details
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1';
 const SB19_ARTIST_ID = '3g7vYcdDXnqnDKYFwqXBJP';
 
@@ -130,13 +121,9 @@ const ID_TO_MEMBER = {
   '20XuMlpFudMP9rDHMTkyar': 'justin'
 };
 
-// Use shared Spotify helper (get token + request) from spotifyController
-
 // Check if local audio file exists
 const checkLocalAudio = (spotifyId) => {
   const folders = ['sb19', 'pablo', 'josh', 'justin', 'stell', 'felip'];
-  
-  // Audio files are in frontend/public/audio
   const frontendAudioPath = path.join(__dirname, '../../../frontend/public/audio');
   
   for (const folder of folders) {
@@ -145,8 +132,6 @@ const checkLocalAudio = (spotifyId) => {
       return `/audio/${folder}/${spotifyId}.mp3`;
     }
   }
-  
-  // Check flat structure
   const flatPath = path.join(frontendAudioPath, `${spotifyId}.mp3`);
   if (fs.existsSync(flatPath)) {
     return `/audio/${spotifyId}.mp3`;
@@ -155,13 +140,53 @@ const checkLocalAudio = (spotifyId) => {
   return null;
 };
 
-// Get SB19 popular tracks
+// Get SB19 popular tracks 
 export const getSB19PopularTracks = async (req, res) => {
   try {
-    // Fetch from Spotify API via shared helper
+    // Try to find SB19 artist in database
+    let artistInstance = await Artist.findOne({ where: { spotify_id: SB19_ARTIST_ID } });
+    
+    // If artist exists in DB, check for popular tracks
+    if (artistInstance) {
+      const popularTracks = await Track.findAll({
+        where: { 
+          artist_id: artistInstance.id,
+          is_popular: 1 
+        },
+        include: [
+          { model: Artist, as: 'artist', attributes: ['name', 'spotify_id'] },
+          { model: Album, as: 'album', attributes: ['name', 'images'] }
+        ],
+        order: [['order_index', 'ASC'], ['id', 'DESC']]
+      });
+
+      // If we have popular tracks in database, return them
+      if (popularTracks && popularTracks.length > 0) {
+        const formattedTracks = popularTracks.map(track => {
+          const localAudioUrl = checkLocalAudio(track.spotify_track_id || track.spotify_id);
+          const albumImages = track.album && track.album.images ? 
+            (typeof track.album.images === 'string' ? JSON.parse(track.album.images) : track.album.images) : [];
+
+          return {
+            id: track.spotify_track_id || track.spotify_id,
+            name: track.title,
+            artists: [{ name: track.artist ? track.artist.name : artistInstance.name }],
+            album: { name: track.album ? track.album.name : null, images: albumImages },
+            duration_ms: track.duration_ms,
+            preview_url: localAudioUrl || track.spotify_external_url,
+            local_audio_url: localAudioUrl,
+            external_urls: { spotify: track.spotify_external_url }
+          };
+        });
+
+        return res.json({ tracks: formattedTracks });
+      }
+    }
+
+    // If no tracks in database, fetch from Spotify API
     const data = await makeSpotifyRequest(`/artists/${SB19_ARTIST_ID}/top-tracks`, { market: 'PH' });
 
-    // Format tracks and check for local audio
+    // Check if local audio exists for each track
     const formattedTracks = data.tracks.map(track => {
       const localAudioUrl = checkLocalAudio(track.id);
       
@@ -177,7 +202,7 @@ export const getSB19PopularTracks = async (req, res) => {
       };
     });
 
-    // Persist popular tracks so next time we serve from DB
+    // Save tracks to database for future access
     try {
       await persistTracks(formattedTracks, true);
     } catch (errPersist) {
@@ -191,7 +216,7 @@ export const getSB19PopularTracks = async (req, res) => {
   }
 };
 
-// Get member tracks
+// Get tracks for individual or solo tracks of each member of SB19
 export const getMemberTracks = async (req, res) => {
   try {
     const { memberId } = req.params;
@@ -217,7 +242,7 @@ export const getMemberTracks = async (req, res) => {
         artistInstance = await Artist.findOne({ where: { spotify_id: artistId } });
       }
       if (!artistInstance) {
-        // case-insensitive name search
+        // case-sensitive search for member name
         artistInstance = await Artist.findOne({ where: sequelize.where(sequelize.fn('LOWER', sequelize.col('name')), memberName) });
       }
     } catch (err) {
@@ -256,10 +281,10 @@ export const getMemberTracks = async (req, res) => {
       }
     }
 
-    // If no DB rows, fetch from Spotify API via shared helper
+    // If not found in DB, fetch from Spotify
     const data = await makeSpotifyRequest(`/artists/${artistId}/top-tracks`, { market: 'PH' });
 
-    // Format tracks and check for local audio
+    // check for local audio
     const formattedTracks = data.tracks.map(track => {
       const localAudioUrl = checkLocalAudio(track.id);
       
@@ -275,7 +300,7 @@ export const getMemberTracks = async (req, res) => {
       };
     });
 
-    // Persist fetched member tracks to DB for caching
+    // then save to database
     try {
       await persistTracks(formattedTracks, false);
     } catch (errPersist) {
@@ -289,16 +314,14 @@ export const getMemberTracks = async (req, res) => {
   }
 };
 
-// Get all tracks
+// Get all tracks (SB19 and the member's solo tracks)
 export const getAllTracks = async (req, res) => {
   try {
     const { album_id } = req.query;
-    
-    // Build query with optional album_id filter
     const whereClause = {};
     
     if (album_id) {
-      // Find album by spotify_id
+      // Find album by spotify_id in DB
       const album = await Album.findOne({ where: { spotify_id: album_id } });
       if (album) {
         whereClause.album_id = album.id;
@@ -331,7 +354,7 @@ export const getAllTracks = async (req, res) => {
           duration_ms: track.duration_ms,
           preview_url: localAudioUrl || track.spotify_external_url,
           local_audio_url: localAudioUrl,
-          localAudioUrl: localAudioUrl,  // Add camelCase version for MusicContext
+          localAudioUrl: localAudioUrl,
           external_urls: { spotify: track.spotify_external_url }
         };
       });
@@ -339,7 +362,7 @@ export const getAllTracks = async (req, res) => {
       return res.json({ tracks: formattedTracks });
     }
 
-  // If DB empty, fetch from Spotify and persist results
+  // If DB is empty, fetch from Spotify and save results
   const data = await makeSpotifyRequest(`/artists/${SB19_ARTIST_ID}/top-tracks`, { market: 'PH' });
 
     const formattedTracks = data.tracks.map(track => {
@@ -357,7 +380,7 @@ export const getAllTracks = async (req, res) => {
       };
     });
 
-    // Persist fetched tracks so DB will have cached data
+    // saves tracks to database for future access
     try {
       await persistTracks(formattedTracks, true);
     } catch (errPersist) {
@@ -371,12 +394,12 @@ export const getAllTracks = async (req, res) => {
   }
 };
 
-// Get track by ID
+// Get a single track by its ID
 export const getTrackById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Try DB first using Sequelize
+    // search DB by spotify_track_id, spotify_id, or internal id
     const dbTrack = await Track.findOne({
       where: {
         [Op.or]: [
@@ -392,7 +415,7 @@ export const getTrackById = async (req, res) => {
     });
 
     if (!dbTrack) {
-      // If not in DB, fetch from Spotify directly (do not persist automatically)
+      // If not found in DB, fetch from Spotify directly but do not save automatically
       try {
         const spotifyTrack = await makeSpotifyRequest(`/tracks/${id}`);
         const localAudioUrl = checkLocalAudio(spotifyTrack.id);

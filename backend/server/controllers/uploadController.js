@@ -1,3 +1,4 @@
+// 
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -10,7 +11,7 @@ const __dirname = dirname(__filename);
 // Configure storage
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    // Save to frontend/public/images directory
+    // Save to uploaded files to frontend/public/images directory
     const uploadPath = path.join(__dirname, '../../../frontend/public/images');
     cb(null, uploadPath);
   },

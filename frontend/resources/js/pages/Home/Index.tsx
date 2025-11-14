@@ -258,10 +258,9 @@ export default function Home() {
                     backgroundSize: window.innerWidth >= 640 ? 'cover' : 'contain', // 👈 fix: show full image on mobile
                 }}
                 >
-                {/* Create aspect ratio for consistent banner height */}
-                <div className="aspect-[16/9] sm:aspect-[21/9] w-full"></div>
+          
+                <div className="aspect-video sm:aspect-21/9 w-full"></div>
 
-                {/* Fading overlay on scroll */}
                 <div
                     className="absolute inset-0 bg-black"
                     style={{ opacity: scrollOpacity }}
