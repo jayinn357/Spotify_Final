@@ -5,7 +5,7 @@ const memberSpotifyIds = {
   Josh: "3xn2W0ziGURPYJj372a6jQ",
   Stell: "4bpUKZGsImgabgDABbThr0",
   Felip: "2tEFDBihLXytoPl4xdResl",
-  Justin: "3xn2W0ziGURPYJj372a6jQ"
+  Justin: "20XuMlpFudMP9rDHMTkyar"
 };
 
 const sb19Id = "3g7vYcdDXnqnDKYFwqXBJP";

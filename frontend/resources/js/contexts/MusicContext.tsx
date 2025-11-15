@@ -58,7 +58,7 @@ export function MusicProvider({ children }: MusicProviderProps) {
   const tracksWithLocal = playlist.filter(t => hasLocal(t));
   const playbackList = tracksWithLocal.length > 0 ? tracksWithLocal : playlist;
 
-    // Find the requested track in the playback list; if missing, default to first
+    // Find the requested track in the playback list; if missing, use default to first
     const trackIndex = playbackList.findIndex(t => t.id === track.id);
     const indexToUse = trackIndex !== -1 ? trackIndex : 0;
 

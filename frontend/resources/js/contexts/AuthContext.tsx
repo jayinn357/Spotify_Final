@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if user is authenticated on mount
+  // Check if user is authenticated 
   useEffect(() => {
     checkAuth();
   }, []);
@@ -35,7 +35,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = async () => {
     try {
       const userData = await api.auth.getUser();
-      // API returns { user: {...} } — normalize here to set the user object
       if (userData && typeof userData === 'object' && 'user' in userData) {
         setUser((userData as any).user);
       } else {

@@ -50,7 +50,6 @@ export default function ConnectSpotifyButton({
         onClick={handleConnect}
         className={`bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full font-semibold transition-colors flex items-center space-x-2 ${className}`}
       >
-        <span>🎵</span>
         <span>Disconnect Spotify</span>
       </button>
     );
@@ -61,7 +60,6 @@ export default function ConnectSpotifyButton({
       onClick={handleConnect}
       className={`bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full font-semibold transition-colors flex items-center space-x-2 ${className}`}
     >
-      <span>🎧</span>
       <span>Connect to Spotify</span>
     </button>
   );

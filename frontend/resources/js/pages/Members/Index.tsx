@@ -9,7 +9,7 @@ const memberSpotifyIds: { [key: string]: string } = {
   Stell: "4bpUKZGsImgabgDABbThr0", 
   Felip: "2tEFDBihLXytoPl4xdResl",
   Ken: "2tEFDBihLXytoPl4xdResl",
-  Justin: "3xn2W0ziGURPYJj372a6jQ" 
+  Justin: "20XuMlpFudMP9rDHMTkyar" 
 };
 
 // Image mappings
