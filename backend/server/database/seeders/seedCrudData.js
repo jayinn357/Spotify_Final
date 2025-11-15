@@ -3,10 +3,10 @@ import { AboutOrigin, AboutAchievement, AboutFooter, TrackMessage } from '../../
 
 async function seedCrudData() {
   try {
-    console.log('🌱 Seeding CRUD data...');
+    console.log('Seeding CRUD data...');
 
-    // Seed About Origins (3 slider sections)
-    console.log('  ✓ Seeding about_origins...');
+    // Seed About Origins Section
+    console.log('Seeding about_origins...');
     await AboutOrigin.bulkCreate([
       {
         title: 'Origins & Formation',
@@ -21,7 +21,7 @@ async function seedCrudData() {
         order: 2
       },
       {
-        title: 'The 1Z Entertainment – A New Chapter of SB19',
+        title: 'The 1Z Entertainment - A New Chapter of SB19',
         content: `The 1Z Entertainment journey began when SB19 parted ways with ShowBT Philippines and decided to take full control of their artistry and direction. In 2023, they founded 1Z (pronounced "One Zone") as their own independent company — managing their creative vision, production, styling, and business under their own terms. This new chapter highlights their authenticity and artistry — blending futuristic sounds, experimental visuals, and powerful storytelling that reflect their growth and individuality. Through 1Z, SB19 continues to inspire Filipinos to break limits, celebrate culture, and raise the P-pop flag globally.`,
         quote: 'One Zone, One Dream, One SB19.',
         image_url: '/images/1Z.jpg',
@@ -29,7 +29,7 @@ async function seedCrudData() {
       }
     ]);
 
-    // Seed About Achievements
+    // Seed About Achievements Section
     console.log('Seeding about_achievements...');
     await AboutAchievement.bulkCreate([
       {
@@ -82,7 +82,7 @@ async function seedCrudData() {
       }
     ]);
 
-    // Seed About Footer
+    // Seed About Footer Section / Members Profiles
     console.log('Seeding about_footer...');
     await AboutFooter.bulkCreate([
       {

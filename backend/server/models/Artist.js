@@ -3,7 +3,6 @@ import sequelize from '../config/database.js';
 
 const Artist = sequelize.define('Artist', {
   id: {
-    // Use INTEGER to stay compatible with other tables' foreign keys
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true

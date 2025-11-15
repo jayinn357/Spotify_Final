@@ -27,7 +27,7 @@ const TrackMessage = sequelize.define('TrackMessage', {
   updatedAt: 'updated_at'
 });
 
-// Define association
+// Association/relationships
 TrackMessage.belongsTo(Track, { foreignKey: 'track_id', onDelete: 'CASCADE' });
 Track.hasOne(TrackMessage, { foreignKey: 'track_id' });
 

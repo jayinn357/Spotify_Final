@@ -47,12 +47,12 @@ const User = sequelize.define('User', {
   }
 });
 
-// Instance method to check password
+// check password
 User.prototype.validatePassword = async function(password) {
   return await bcrypt.compare(password, this.password);
 };
 
-// Instance method to get safe user data (without password)
+// get safe user data without password
 User.prototype.toSafeObject = function() {
   const { password, ...safeUser } = this.toJSON();
   return safeUser;

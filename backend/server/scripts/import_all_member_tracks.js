@@ -12,12 +12,12 @@ dotenv.config();
 // Import ALL tracks for SB19 and each member by fetching albums then album tracks
 async function importAllMemberTracks() {
   try {
-    console.log('🔄 Starting comprehensive track import...\n');
+    console.log('Starting comprehensive track import...\n');
 
     await sequelize.authenticate();
-    console.log('✅ Database connected.\n');
+    console.log('Database connected.\n');
 
-    // Get ONLY SB19 and its 5 members (NOT collaborators like Ben&Ben, Sarah Geronimo, etc.)
+    // Get ONLY SB19 and its 5 members
     const targetArtistNames = ['SB19', 'Pablo', 'Josh', 'Stell', 'Ken', 'Justin'];
     const artists = await Artist.findAll({
       where: {
@@ -26,7 +26,7 @@ async function importAllMemberTracks() {
       }
     });
 
-    console.log(`📋 Found ${artists.length} artists to process:\n`);
+    console.log(`Found ${artists.length} artists to process:\n`);
     artists.forEach(a => console.log(`  - ${a.name} (${a.spotify_id})`));
     console.log('');
 
@@ -34,7 +34,7 @@ async function importAllMemberTracks() {
     let totalTracksSkipped = 0;
 
     for (const artist of artists) {
-      console.log(`\n🎤 Processing ${artist.name}...`);
+      console.log(`\nProcessing ${artist.name}...`);
 
       try {
         // Fetch artist's albums
@@ -45,7 +45,7 @@ async function importAllMemberTracks() {
         });
 
         const albums = albumsData.items || [];
-        console.log(`  📀 Found ${albums.length} albums/singles`);
+        console.log(`Found ${albums.length} albums/singles`);
 
         for (const albumItem of albums) {
           try {
@@ -53,9 +53,9 @@ async function importAllMemberTracks() {
             const albumDetails = await makeSpotifyRequest(`/albums/${albumItem.id}`, { market: 'PH' });
             
             const albumTracks = albumDetails.tracks.items || [];
-            console.log(`    🎵 Album: "${albumDetails.name}" - ${albumTracks.length} tracks`);
+            console.log(`Album: "${albumDetails.name}" - ${albumTracks.length} tracks`);
 
-            // Upsert album
+            // upsert album
             const [albumInstance] = await Album.findOrCreate({
               where: { spotify_id: albumDetails.id },
               defaults: {
@@ -84,19 +84,15 @@ async function importAllMemberTracks() {
 
                 // ONLY import tracks where the PRIMARY artist (first in the array) is the current artist
                 // This ensures we get their songs (including collabs where they're the primary artist)
-                // But we skip songs by OTHER artists where they're just featured
                 const primaryArtistId = track.artists[0]?.id;
                 
                 if (primaryArtistId !== artist.spotify_id) {
-                  // Skip this track - it's not primarily by this artist
                   totalTracksSkipped++;
                   continue;
                 }
 
-                // This track belongs to the current artist
+                // This track belongs to the current artist, create it
                 const trackArtistId = artist.id;
-
-                // Create track
                 await Track.create({
                   spotify_track_id: track.id,
                   spotify_id: track.id,
@@ -104,35 +100,35 @@ async function importAllMemberTracks() {
                   artist_id: trackArtistId,
                   album_id: albumInstance.id,
                   duration_ms: track.duration_ms,
-                  local_audio_url: null, // Will be set by checkLocalAudio in controller
+                  local_audio_url: null,
                   spotify_external_url: track.external_urls?.spotify || null,
                   images: albumDetails.images || null,
                   is_featured: 0,
-                  is_popular: 0, // Will be marked separately
+                  is_popular: 0, // mark popular later, code below
                   order_index: track.track_number || 0
                 });
 
                 totalTracksInserted++;
               } catch (trackError) {
-                console.error(`      ❌ Error importing track "${track.name}":`, trackError.message);
+                console.error(`Error importing track "${track.name}":`, trackError.message);
               }
             }
 
             // Small delay to respect Spotify rate limits
             await new Promise(resolve => setTimeout(resolve, 100));
           } catch (albumError) {
-            console.error(`    ❌ Error fetching album "${albumItem.name}":`, albumError.message);
+            console.error(`Error fetching album "${albumItem.name}":`, albumError.message);
           }
         }
 
-        console.log(`  ✅ Completed ${artist.name}`);
+        console.log(`Completed ${artist.name}`);
       } catch (artistError) {
-        console.error(`  ❌ Error processing ${artist.name}:`, artistError.message);
+        console.error(`Error processing ${artist.name}:`, artistError.message);
       }
     }
 
-    // Now mark popular tracks (top tracks for SB19)
-    console.log('\n\n🌟 Marking popular tracks...');
+    // Now mark popular tracks (marked means top tracks for SB19)
+    console.log('\n\nMarking popular tracks...');
     try {
       const sb19Artist = artists.find(a => a.name === 'SB19');
       if (sb19Artist) {
@@ -144,31 +140,30 @@ async function importAllMemberTracks() {
           { where: { spotify_track_id: topTrackIds } }
         );
 
-        console.log(`  ✅ Marked ${topTrackIds.length} tracks as popular`);
+        console.log(`Marked ${topTrackIds.length} tracks as popular`);
       }
     } catch (popularError) {
-      console.error('  ❌ Error marking popular tracks:', popularError.message);
+      console.error('Error marking popular tracks:', popularError.message);
     }
 
-    // Summary
-    console.log('\n\n📊 Import Summary:');
-    console.log(`  ✅ Tracks inserted: ${totalTracksInserted}`);
-    console.log(`  ⏭️  Tracks skipped (already exist): ${totalTracksSkipped}`);
+    console.log('\n\nImport Summary:');
+    console.log(`Tracks inserted: ${totalTracksInserted}`);
+    console.log(`Tracks skipped (already exist): ${totalTracksSkipped}`);
 
-    // Get counts per artist
-    console.log('\n📈 Tracks per artist:');
+    // counts per artist
+    console.log('\nTracks per artist:');
     for (const artist of artists) {
       const count = await Track.count({ where: { artist_id: artist.id } });
       console.log(`  - ${artist.name}: ${count} tracks`);
     }
 
     const totalTracks = await Track.count();
-    console.log(`\n  📦 Total tracks in database: ${totalTracks}`);
+    console.log(`\nTotal tracks in database: ${totalTracks}`);
 
-    console.log('\n✅ Import completed successfully!\n');
+    console.log('\nImport completed successfully!\n');
     process.exit(0);
   } catch (error) {
-    console.error('\n❌ Import failed:', error);
+    console.error('\nImport failed:', error);
     console.error(error.stack);
     process.exit(1);
   }

@@ -5,20 +5,20 @@ import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Register
+// Register Routes
 router.post('/register', [
   body('name').notEmpty().withMessage('Name is required'),
   body('email').isEmail().withMessage('Valid email is required'),
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
 ], authController.register);
 
-// Login
+// Login Routes
 router.post('/login', [
   body('email').isEmail().withMessage('Valid email is required'),
   body('password').notEmpty().withMessage('Password is required')
 ], authController.login);
 
-// Logout
+// Logout Route
 router.post('/logout', authenticate, authController.logout);
 
 // Get current user
@@ -41,7 +41,7 @@ router.post('/confirm-password', authenticate, [
   body('password').notEmpty().withMessage('Password is required')
 ], authController.confirmPassword);
 
-// Spotify OAuth routes
+// Spotify OAuth Routes
 router.get('/spotify', authController.spotifyAuth);
 router.get('/spotify/callback', authController.spotifyCallback);
 

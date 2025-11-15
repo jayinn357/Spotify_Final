@@ -11,7 +11,6 @@ import { dirname, join } from 'path';
 import authRoutes from './routes/auth.js';
 import spotifyRoutes from './routes/spotify.js';
 import trackRoutes from './routes/tracks.js';
-import settingsRoutes from './routes/settings.js';
 import crudRoutes from './routes/crud.js';
 
 // Import database
@@ -57,7 +56,6 @@ app.use('/images', express.static(join(__dirname, '../../frontend/public/images'
 app.use('/api/auth', authRoutes);
 app.use('/api/spotify', spotifyRoutes);
 app.use('/api/tracks', trackRoutes);
-app.use('/api/settings', settingsRoutes);
 app.use('/api/crud', crudRoutes);
 
 // Health check

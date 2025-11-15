@@ -10,15 +10,7 @@ export const up = async (queryInterface, Sequelize) => {
         type: Sequelize.STRING,
         allowNull: false
       },
-      content_paragraph_1: {
-        type: Sequelize.TEXT,
-        allowNull: true
-      },
-      content_paragraph_2: {
-        type: Sequelize.TEXT,
-        allowNull: true
-      },
-      content_paragraph_3: {
+      content: {
         type: Sequelize.TEXT,
         allowNull: true
       },

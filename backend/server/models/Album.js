@@ -20,8 +20,7 @@ const Album = sequelize.define('Album', {
     type: DataTypes.JSON,
     allowNull: true
   },
-  // Only include columns that actually exist in the DB schema.
-  // The albums table in the Laravel schema contains: id, spotify_id, name, images, created_at, updated_at
+
 }, {
   tableName: 'albums',
   timestamps: true,

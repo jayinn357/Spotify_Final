@@ -1,10 +1,11 @@
-// 
+// imports
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { Track } from '../models/index.js';
 
+// get full file path of the current path and conver to regular path
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -16,7 +17,7 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: function (req, file, cb) {
-    // Generate unique filename: timestamp-originalname
+    // Filename: timestamp-originalname
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
     const nameWithoutExt = path.basename(file.originalname, ext);
@@ -24,7 +25,7 @@ const storage = multer.diskStorage({
   }
 });
 
-// File filter - only allow images
+// filtering uploaded files - only allow images
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif|webp/;
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -37,23 +38,22 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Configure multer
+// Configure multer for image uploads; limit file size to 5MB
 export const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    fileSize: 5 * 1024 * 1024 
   },
   fileFilter: fileFilter
 });
 
-// Upload handler
+// Handles upload requests
 export const uploadImage = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    // Return the public URL path
     const imageUrl = `/images/${req.file.filename}`;
     
     res.json({
@@ -68,14 +68,15 @@ export const uploadImage = async (req, res) => {
   }
 };
 
-// Configure audio storage
+
+// Saving audio files to separate storage from images
 const audioStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    // Get artist name from request body to determine folder
+    // Get artist name to determine folder 
     const artistName = req.body.artistName || 'unknown';
     const uploadPath = path.join(__dirname, `../../../frontend/public/audio/${artistName.toLowerCase()}`);
     
-    // Create directory if it doesn't exist
+    // Create folder if needed
     import('fs').then(fs => {
       if (!fs.existsSync(uploadPath)) {
         fs.mkdirSync(uploadPath, { recursive: true });
@@ -102,16 +103,16 @@ const audioFilter = (req, file, cb) => {
   }
 };
 
-// Configure multer for audio
+// Configure multer for audio; limit file size to 10MB
 export const uploadAudio = multer({
   storage: audioStorage,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit for audio
+    fileSize: 10 * 1024 * 1024 
   },
   fileFilter: audioFilter
 });
 
-// Audio upload handler with spotify_track_id validation
+// validates filename matches spotify_track_id 
 export const uploadTrackAudio = async (req, res) => {
   try {
     if (!req.file) {
@@ -143,7 +144,7 @@ export const uploadTrackAudio = async (req, res) => {
       });
     }
 
-    // Get artist name for the path
+    // Get artist name for building audio URL/path
     const artistName = req.body.artistName || 'unknown';
     const audioUrl = `/audio/${artistName.toLowerCase()}/${req.file.filename}`;
     

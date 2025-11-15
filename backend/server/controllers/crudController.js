@@ -22,6 +22,7 @@ export const updateArtist = async (req, res) => {
     const { real_name, specialty, role, description } = req.body;
     
     const artist = await Artist.findByPk(id);
+    
     if (!artist) {
       return res.status(404).json({ error: 'Artist not found' });
     }

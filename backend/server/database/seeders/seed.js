@@ -3,12 +3,11 @@ import sequelize from '../../config/database.js';
 
 const seedUsers = async () => {
   try {
-    // Option A: Use existing data - only sync without dropping tables
     await sequelize.sync({ alter: false }); // Don't force drop, just create if not exists
     
     console.log('Seeding database...');
 
-    // Create test users only if they don't exist
+    // Create test users only if there is no existing data
     const users = [
       { name: 'User', email: 'user@mahalima.com', password: 'password' },
       { name: 'Test User', email: 'test@mahalima.com', password: 'password' },

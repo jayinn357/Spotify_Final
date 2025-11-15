@@ -33,41 +33,41 @@ import { upload, uploadImage, uploadAudio, uploadTrackAudio } from '../controlle
 
 const router = express.Router();
 
-// ===== IMAGE UPLOAD ROUTE =====
+// image upload route
 router.post('/upload-image', upload.single('image'), uploadImage);
 
-// ===== AUDIO UPLOAD ROUTE =====
+// audio upload route
 router.post('/tracks/:trackId/upload-audio', uploadAudio.single('audio'), uploadTrackAudio);
 
-// ===== ARTISTS ROUTES =====
+// artists routes
 router.get('/artists', getAllArtists);
 router.put('/artists/:id', updateArtist);
 
-// ===== ABOUT ORIGINS ROUTES =====
+// about origins routes
 router.get('/about-origins', getAllAboutOrigins);
 router.post('/about-origins', createAboutOrigin);
 router.put('/about-origins/:id', updateAboutOrigin);
 router.delete('/about-origins/:id', deleteAboutOrigin);
 
-// ===== ABOUT ACHIEVEMENTS ROUTES =====
+// about achievements routes
 router.get('/about-achievements', getAllAboutAchievements);
 router.post('/about-achievements', createAboutAchievement);
 router.put('/about-achievements/:id', updateAboutAchievement);
 router.delete('/about-achievements/:id', deleteAboutAchievement);
 
-// ===== ABOUT FOOTER ROUTES =====
+// about footer routes
 router.get('/about-footer', getAllAboutFooter);
 router.put('/about-footer/:id', updateAboutFooter);
 router.delete('/about-footer/:id', deleteAboutFooter);
 
-// ===== TRACK MESSAGES ROUTES =====
+// track messages routes
 router.get('/track-messages', getAllTrackMessages);
 router.get('/track-messages/track/:trackId', getTrackMessageByTrackId);
 router.post('/track-messages', createTrackMessage);
 router.put('/track-messages/:id', updateTrackMessage);
 router.delete('/track-messages/:id', deleteTrackMessage);
 
-// ===== TRACKS AUDIO ROUTES =====
+// tracks audio routes
 router.get('/tracks/without-audio', getTracksWithoutAudio);
 router.get('/tracks/without-messages', getTracksWithoutMessages);
 router.put('/tracks/:id/audio', updateTrackAudio);

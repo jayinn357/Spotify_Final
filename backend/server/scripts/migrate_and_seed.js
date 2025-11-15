@@ -1,12 +1,12 @@
+// imports
 import sequelize from '../config/database.js';
 import User from '../models/User.js';
 import Artist from '../models/Artist.js';
 import Album from '../models/Album.js';
 import Track from '../models/Track.js';
-import '../models/index.js'; // Import associations
-import bcrypt from 'bcryptjs';
+import '../models/index.js';
 
-// SB19 Members and Group Data
+// SB19 and Members
 const ARTISTS_DATA = [
   {
     name: 'SB19',
@@ -74,19 +74,19 @@ const ALBUMS_DATA = [
 
 async function migrateAndSeed() {
   try {
-    console.log('🔄 Starting migration and seeding process...\n');
+    console.log('Starting migration and seeding process...\n');
 
     // Test database connection
     await sequelize.authenticate();
-    console.log('✅ Database connection established.\n');
+    console.log('Database connection established.\n');
 
-    // Sync all models (alter: true will add missing columns without dropping tables)
-    console.log('🔄 Syncing database schema...');
+    // Sync all models
+    console.log('Syncing database schema...');
     await sequelize.sync({ alter: true });
-    console.log('✅ Database schema synchronized.\n');
+    console.log('Database schema synchronized.\n');
 
     // Seed Artists
-    console.log('🔄 Seeding artists...');
+    console.log('Seeding artists...');
     for (const artistData of ARTISTS_DATA) {
       const [artist, created] = await Artist.findOrCreate({
         where: { spotify_id: artistData.spotify_id },
@@ -94,36 +94,36 @@ async function migrateAndSeed() {
       });
 
       if (created) {
-        console.log(`  ✅ Created artist: ${artistData.name}`);
+        console.log(`Created artist: ${artistData.name}`);
       } else {
         // Update existing artist
         await artist.update(artistData);
-        console.log(`  ℹ️  Updated artist: ${artistData.name}`);
+        console.log(`Updated artist: ${artistData.name}`);
       }
     }
-    console.log('✅ Artists seeded.\n');
+    console.log('Artists seeded.\n');
 
     // Seed Albums
-    console.log('🔄 Seeding albums...');
+    console.log('Seeding albums...');
     for (const albumData of ALBUMS_DATA) {
       const [album, created] = await Album.findOrCreate({
         where: { spotify_id: albumData.spotify_id },
         defaults: {
           ...albumData,
-          images: null // Will be fetched from API when needed
+          images: null // Images will be fetched later when importing tracks
         }
       });
 
       if (created) {
-        console.log(`  ✅ Created album: ${albumData.name}`);
+        console.log(`Created album: ${albumData.name}`);
       } else {
-        console.log(`  ℹ️  Album already exists: ${albumData.name}`);
+        console.log(`Album already exists: ${albumData.name}`);
       }
     }
-    console.log('✅ Albums seeded.\n');
+    console.log('Albums seeded.\n');
 
     // Create a test user if none exists
-    console.log('🔄 Checking for test user...');
+    console.log('Checking for test user...');
     const userCount = await User.count();
     if (userCount === 0) {
       // Let the model's beforeCreate hook hash the password
@@ -133,13 +133,12 @@ async function migrateAndSeed() {
         password: 'password123', // Will be hashed by the model
         email_verified_at: new Date()
       });
-      console.log('✅ Created test user (email: test@sb19.com, password: password123)\n');
+      console.log('Created test user (email: test@sb19.com, password: password123)\n');
     } else {
-      console.log(`ℹ️  Users already exist (${userCount} users found)\n`);
+      console.log(`Users already exist (${userCount} users found)\n`);
     }
 
-    // Display summary
-    console.log('📊 Database Summary:');
+    console.log('Database Summary:');
     const artistCount = await Artist.count();
     const albumCount = await Album.count();
     const trackCount = await Track.count();
@@ -150,8 +149,8 @@ async function migrateAndSeed() {
     console.log(`  - Albums: ${albumCount}`);
     console.log(`  - Tracks: ${trackCount}`);
     
-    console.log('\n✅ Migration and seeding completed successfully!');
-    console.log('\n📝 Next Steps:');
+    console.log('\nMigration and seeding completed successfully!');
+    console.log('\nNext Steps:');
     console.log('  1. Start the server: npm run start');
     console.log('  2. Login with: test@sb19.com / password123');
     console.log('  3. First page load will fetch tracks from Spotify API');
@@ -159,7 +158,7 @@ async function migrateAndSeed() {
 
     process.exit(0);
   } catch (error) {
-    console.error('❌ Migration/Seeding failed:', error);
+    console.error('Migration/Seeding failed:', error);
     process.exit(1);
   }
 }

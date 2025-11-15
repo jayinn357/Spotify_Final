@@ -13,7 +13,6 @@
     }
 
     const folders = fs.readdirSync(audioRoot, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name);
-    // Also include root audio folder for flat files
     folders.push('');
 
     let updated = 0;
@@ -27,7 +26,6 @@
 
         // Update tracks that match spotify_track_id
         const [res] = await sequelize.query("UPDATE tracks SET local_audio_url = ? WHERE spotify_track_id = ?", { replacements: [relPath, name]});
-        // Note: res is not always meaningful across dialects; run a select to verify
         const [rows] = await sequelize.query("SELECT id, title FROM tracks WHERE spotify_track_id = ?", { replacements: [name]});
         if (rows && rows.length > 0) {
           for (const row of rows) {

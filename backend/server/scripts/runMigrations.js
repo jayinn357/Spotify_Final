@@ -10,31 +10,30 @@ import * as createTrackMessages from '../migrations/20251031000005-create-track-
 
 async function runMigrations() {
   try {
-    console.log('🔄 Running migrations...');
+    console.log('Running migrations...');
     
-    // Get queryInterface
     const queryInterface = sequelize.getQueryInterface();
     
     // Run each migration
-    console.log('  ✓ Adding description column to artists table...');
+    console.log('Adding description column to artists table...');
     await addDescriptionToArtists.up(queryInterface, Sequelize);
     
-    console.log('  ✓ Creating about_origins table...');
+    console.log('Creating about_origins table...');
     await createAboutOrigins.up(queryInterface, Sequelize);
     
-    console.log('  ✓ Creating about_achievements table...');
+    console.log('Creating about_achievements table...');
     await createAboutAchievements.up(queryInterface, Sequelize);
     
-    console.log('  ✓ Creating about_footer table...');
+    console.log('Creating about_footer table...');
     await createAboutFooter.up(queryInterface, Sequelize);
     
-    console.log('  ✓ Creating track_messages table...');
+    console.log('Creating track_messages table...');
     await createTrackMessages.up(queryInterface, Sequelize);
     
-    console.log('✅ All migrations completed successfully!');
+    console.log('All migrations completed successfully!');
     process.exit(0);
   } catch (error) {
-    console.error('❌ Migration failed:', error);
+    console.error('Migration failed:', error);
     process.exit(1);
   }
 }
